@@ -1,4 +1,4 @@
-# Instructions for setting up the repository for development
+# Setup Instructions
 Pre-requisites: 
 * Python 3.9
 * Git
