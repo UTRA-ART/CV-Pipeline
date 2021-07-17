@@ -53,4 +53,4 @@ and all future times just use
 You can see all branches at anytime by using ``` git branch ``` and switch branches using ``` git checkout branch_name ```. 
 #### MAKE SURE YOU ARE ON THE CORRECT BRANCH WHEN YOU ARE WORKING
 
-Now your system is set up! If you are new to using git, please work through GITHUB.md to learn how to use the software, if not, start coding! 
+Now your system is set up! If you are new to using git, please work through the team's github tutorial to learn how to use the software, if not, start coding! 
