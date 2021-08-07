@@ -25,30 +25,31 @@ def view_image(ds):
         ax.set_title(f"Label: {label[i]}")
 
     plt.show()
-
-#-------------------------------------- Helper Functions --------------------------------------#
-def aug_fn(image, img_size):
-    data = {"image":image}
-    aug_data = transforms(**data)
-    aug_img = aug_data["image"]
-    aug_img = tf.cast(aug_img/255.0, tf.float32)
-    aug_img = tf.image.resize(aug_img, size=[img_size, img_size])
-    return aug_img
-
-def process_data(image, label, img_size):
-    aug_img = tf.numpy_function(func=aug_fn, inp=[image, img_size], Tout=tf.float32)
-    return aug_img, label
-
-def set_shapes(img, label, img_shape=(120,120,3)):
-    img.set_shape(img_shape)
-    label.set_shape([])
-    return img, label
-
-
+    
 #-------------------------------------- Get Augmented Set Function --------------------------------------#
-def get_aug(dataset, img_size):
-    aug_data = dataset.map(partial(process_data, img_size=img_size))
-    aug_data = aug_data.map(partial(set_shapes, img_shape=(img_size, img_size,3))).batch(32)
+def get_aug(dataset, img_height, img_width, transforms):
+
+    #-------------------------------------- Helper Functions --------------------------------------#
+    def aug_fn(image, img_height, img_width):
+        data = {"image":image}
+        aug_data = transforms(**data)
+        aug_img = aug_data["image"]
+        aug_img = tf.cast(aug_img/255.0, tf.float32)
+        aug_img = tf.image.resize(aug_img, size=[img_height, img_width])
+        return aug_img
+
+    def process_data(image, label, img_height, img_width):
+        aug_img = tf.numpy_function(func=aug_fn, inp=[image, img_height, img_width], Tout=tf.float32)
+        return aug_img, label
+
+    def set_shapes(img, label, img_shape=(120,120,3)):
+        img.set_shape(img_shape)
+        label.set_shape([])
+        return img, label
+
+    #-------------------------------------- Main Logic --------------------------------------#
+    aug_data = dataset.map(partial(process_data, img_height=img_height, img_width=img_width))
+    aug_data = aug_data.map(partial(set_shapes, img_shape=(img_height, img_width,3))).batch(32)
     return aug_data
 
 
@@ -68,6 +69,6 @@ transforms = Compose([
         ])
 
 # Get augmented set
-aug_data = get_aug(data, 120)
+aug_data = get_aug(data, 120, 120, transforms)
 
 view_image(aug_data)
