@@ -7,12 +7,6 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
 
-dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
-data_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
-print(data_dir)
-data_dir = pathlib.Path(data_dir)
-print(data_dir)
-
 #------------------------------------ Dataset Loader for Classification  ------------------------------------#
 '''
 Args: 
@@ -28,7 +22,7 @@ Returns:
   train_ds: training dataset
   val_ds: validation dataset
 '''
-def classificationDatasetLoader(path, validation_split, batch_size, img_height, img_width, seed):
+def classificationDatasetLoader(path, batch_size, img_height, img_width, seed=3, validation_split=0.2):
 
     path = pathlib.Path(path)
 
@@ -55,25 +49,26 @@ def classificationDatasetLoader(path, validation_split, batch_size, img_height, 
 
 
 
-#----------------------------- Test ----------------------------#
+#------------------------------------ Test ------------------------------------#
+if __name__ == "__main__":
 
-dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
-data_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
-data_dir = pathlib.Path(data_dir)
+    dataset_url = "https://storage.googleapis.com/download.tensorflow.org/example_images/flower_photos.tgz"
+    data_dir = tf.keras.utils.get_file('flower_photos', origin=dataset_url, untar=True)
+    data_dir = pathlib.Path(data_dir)
 
-train_ds, val_ds = classificationDatasetLoader(data_dir, 0.2, 24, 180, 180, 2)
+    train_ds, val_ds = classificationDatasetLoader(data_dir, 24, 180, 180)
 
-def view_image(ds):
-    image, label = next(iter(ds)) # extract 1 batch from the dataset
-    image = image.numpy()
-    label = label.numpy()
+    def view_image(ds):
+        image, label = next(iter(ds)) # extract 1 batch from the dataset
+        image = image.numpy()
+        label = label.numpy()
 
-    fig = plt.figure(figsize=(22, 22))
-    for i in range(20):
-        ax = fig.add_subplot(4, 5, i+1, xticks=[], yticks=[])
-        ax.imshow(image[i])
-        ax.set_title(f"Label: {label[i]}")
+        fig = plt.figure(figsize=(22, 22))
+        for i in range(20):
+            ax = fig.add_subplot(4, 5, i+1, xticks=[], yticks=[])
+            ax.imshow(image[i])
+            ax.set_title(f"Label: {label[i]}")
 
-    plt.show()
+        plt.show()
 
-view_image(train_ds)
+    view_image(train_ds)

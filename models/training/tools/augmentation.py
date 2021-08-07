@@ -12,20 +12,6 @@ from albumentations import (
     Rotate
 )
 
-#-------------------------------------- View Images in Dataset --------------------------------------#
-def view_image(ds):
-    image, label = next(iter(ds)) # extract 1 batch from the dataset
-    image = image.numpy()
-    label = label.numpy()
-
-    fig = plt.figure(figsize=(22, 22))
-    for i in range(20):
-        ax = fig.add_subplot(4, 5, i+1, xticks=[], yticks=[])
-        ax.imshow(image[i])
-        ax.set_title(f"Label: {label[i]}")
-
-    plt.show()
-    
 #-------------------------------------- Get Augmented Set Function --------------------------------------#
 def get_aug(dataset, img_height, img_width, transforms):
 
@@ -49,26 +35,40 @@ def get_aug(dataset, img_height, img_width, transforms):
 
     #-------------------------------------- Main Logic --------------------------------------#
     aug_data = dataset.map(partial(process_data, img_height=img_height, img_width=img_width))
-    aug_data = aug_data.map(partial(set_shapes, img_shape=(img_height, img_width,3))).batch(32)
+    aug_data = aug_data.map(partial(set_shapes, img_shape=(img_height, img_width,3)))
     return aug_data
 
 
 #-------------------------------------- Test Code --------------------------------------#
+if __name__ == "__main__":
 
-# load in the tf_flowers dataset
-data, info= tfds.load(name="tf_flowers", split="train", as_supervised=True, with_info=True)
+    def view_image(ds):
+        image, label = next(iter(ds)) # extract 1 batch from the dataset
+        image = image.numpy()
+        label = label.numpy()
 
-# Create Transforms
-transforms = Compose([
-            Rotate(limit=40),
-            RandomBrightness(limit=0.1),
-            JpegCompression(quality_lower=85, quality_upper=100, p=0.5),
-            HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
-            RandomContrast(limit=0.2, p=0.5),
-            HorizontalFlip(),
-        ])
+        fig = plt.figure(figsize=(22, 22))
+        for i in range(20):
+            ax = fig.add_subplot(4, 5, i+1, xticks=[], yticks=[])
+            ax.imshow(image[i])
+            ax.set_title(f"Label: {label[i]}")
 
-# Get augmented set
-aug_data = get_aug(data, 120, 120, transforms)
+        plt.show()
+        
+    # load in the tf_flowers dataset
+    data, info= tfds.load(name="tf_flowers", split="train", as_supervised=True, with_info=True)
 
-view_image(aug_data)
+    # Create Transforms
+    transforms = Compose([
+                Rotate(limit=40),
+                RandomBrightness(limit=0.1),
+                JpegCompression(quality_lower=85, quality_upper=100, p=0.5),
+                HueSaturationValue(hue_shift_limit=20, sat_shift_limit=30, val_shift_limit=20, p=0.5),
+                RandomContrast(limit=0.2, p=0.5),
+                HorizontalFlip(),
+            ])
+
+    # Get augmented set
+    aug_data = get_aug(data, 120, 120, transforms)
+
+    view_image(aug_data.batch(32))
