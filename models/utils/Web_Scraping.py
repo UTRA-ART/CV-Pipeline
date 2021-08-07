@@ -27,7 +27,8 @@ def fetch_image_urls(query:str, max_links_to_fetch:int, wd:webdriver, sleep_betw
     image_urls = set()
     image_count = 0
     results_start = 0
-    while image_count < max_links_to_fetch:
+    iterations = 0
+    while (image_count < max_links_to_fetch) and (iterations < 10):
         scroll_to_end(wd)
 
         # get all image thumbnail results
@@ -57,12 +58,14 @@ def fetch_image_urls(query:str, max_links_to_fetch:int, wd:webdriver, sleep_betw
                 break
         else:
             print("Found:", len(image_urls), "image links, looking for more ...")
-            time.sleep(30)
-            return
+            time.sleep(15)
+            # scroll_to_end(wd)
+            # return
             load_more_button = wd.find_element_by_css_selector(".mye4qd")
             if load_more_button:
                 wd.execute_script("document.querySelector('.mye4qd').click();")
-
+            else:
+                iterations += 1
         # move the result startpoint further down
         results_start = len(thumbnail_results)
 
@@ -92,16 +95,19 @@ def persist_image(folder_path:str,file_name:str,url:str):
 
 def main():
     wd = webdriver.Chrome(executable_path=DRIVER_PATH)
-    queries = ["Dog","Cat"]  #change your set of querries here
+    queries = ["Road Barrels ]  #change your set of querries here
     for query in queries:
         wd.get('https://google.com')
         search_box = wd.find_element_by_css_selector('input.gLFyf')
         search_box.send_keys(query)
-        links = fetch_image_urls(query,2,wd)    # Choose how many images you want to download
+        links = fetch_image_urls(query,100,wd)    # Choose how many images you want to download
 
         images_path = '/Users/jasonyuan/Desktop/images'  # Folder where the images will be saved
-        for i in links:
-            persist_image(images_path,query,i)
+        if links == None:
+            continue
+        else:
+            for i in links:
+                persist_image(images_path,query,i)
     wd.quit()
 
 ###########################################################################################################
