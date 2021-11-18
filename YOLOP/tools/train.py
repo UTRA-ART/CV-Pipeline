@@ -351,7 +351,7 @@ def main():
             train_loader.sampler.set_epoch(epoch)
         # train for one epoch
         train(cfg, train_loader, model, criterion, optimizer, scaler,
-              epoch, num_batch, num_warmup, writer_dict, logger, device, rank)
+              epoch, 2, num_warmup, writer_dict, logger, device, rank)
         
         lr_scheduler.step()
 

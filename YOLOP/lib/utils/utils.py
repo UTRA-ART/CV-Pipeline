@@ -150,6 +150,9 @@ def time_synchronized():
 class DataLoaderX(DataLoader):
     """prefetch dataloader"""
     def __iter__(self):
+        # Hack to pickle
+        self.dataset.label_list = list(self.dataset.label_list)
+        self.dataset.lane_list = list(self.dataset.lane_list)
         return BackgroundGenerator(super().__iter__())
 
 @contextmanager
