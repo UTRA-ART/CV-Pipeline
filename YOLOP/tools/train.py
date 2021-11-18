@@ -286,7 +286,10 @@ def main():
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
     )
 
-    train_dataset = eval('dataset.' + cfg.DATASET.DATASET)(
+    from lib.dataset.bdd import BddDataset
+
+    # train_dataset = eval('lib.dataset.' + cfg.DATASET.DATASET)(
+    train_dataset = BddDataset(
         cfg=cfg,
         is_train=True,
         inputsize=cfg.MODEL.IMAGE_SIZE,
@@ -309,7 +312,7 @@ def main():
     num_batch = len(train_loader)
 
     if rank in [-1, 0]:
-        valid_dataset = eval('dataset.' + cfg.DATASET.DATASET)(
+        valid_dataset = eval(cfg.DATASET.DATASET)(
             cfg=cfg,
             is_train=False,
             inputsize=cfg.MODEL.IMAGE_SIZE,

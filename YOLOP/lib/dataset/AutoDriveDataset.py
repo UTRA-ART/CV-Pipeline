@@ -8,7 +8,7 @@ import torchvision.transforms as transforms
 from pathlib import Path
 from PIL import Image
 from torch.utils.data import Dataset
-from ..utils import letterbox, augment_hsv, random_perspective, xyxy2xywh, cutout
+from lib.utils import letterbox, augment_hsv, random_perspective, xyxy2xywh, cutout
 
 
 class AutoDriveDataset(Dataset):
@@ -34,7 +34,7 @@ class AutoDriveDataset(Dataset):
         self.Tensor = transforms.ToTensor()
         img_root = Path(cfg.DATASET.DATAROOT)
         label_root = Path(cfg.DATASET.LABELROOT)
-        mask_root = Path(cfg.DATASET.MASKROOT)
+        # mask_root = Path(cfg.DATASET.MASKROOT)
         lane_root = Path(cfg.DATASET.LANEROOT)
         if is_train:
             indicator = cfg.DATASET.TRAIN_SET
@@ -42,10 +42,10 @@ class AutoDriveDataset(Dataset):
             indicator = cfg.DATASET.TEST_SET
         self.img_root = img_root / indicator
         self.label_root = label_root / indicator
-        self.mask_root = mask_root / indicator
+        # self.mask_root = mask_root / indicator
         self.lane_root = lane_root / indicator
-        # self.label_list = self.label_root.iterdir()
-        self.mask_list = self.mask_root.iterdir()
+        self.label_list = self.label_root.iterdir()
+        # self.mask_list = self.mask_root.iterdir()
         self.lane_list = self.lane_root.iterdir()
 
         self.db = []

@@ -30,29 +30,13 @@ class BddDataset(AutoDriveDataset):
         gt_db = []
         height, width = self.shapes
         for lane in tqdm(list(self.lane_list)):
-
-
             lane_path = str(lane)
-
-            #print(lane.replace(str(self.lane_root), str(self.label_root)))
-
-            print("\n\n\n check this path")
-            print(lane_path.replace(str(self.lane_root), str(self.label_root)))
-
             label_path = lane_path.replace(str(self.lane_root), str(self.label_root)).replace(".png", ".json")
             image_path = lane_path.replace(str(self.lane_root), str(self.img_root)).replace(".png", ".jpg")
-
-            # mask_path = str(mask)
-            # label_path = mask_path.replace(str(self.mask_root), str(self.label_root)).replace(".png", ".json")
-            # image_path = mask_path.replace(str(self.mask_root), str(self.img_root)).replace(".png", ".jpg")
-            # lane_path = mask_path.replace(str(self.mask_root), str(self.lane_root))
-            #with open(label_path, 'r') as f:
-            with open("C:/Users/binha/OneDrive/Desktop/UTRA ART/YOLOP/dataset/bdd/bdd100k/labels/100k/bdd100k_labels_images_train.json", "r") as f:
+            # lane_path = lane_path.replace(str(self.lane_root), str(self.lane_root))
+            with open(label_path, 'r') as f:
                 label = json.load(f)
-
-            #print(label)
-            data = label
-            #data = label['frames'][0]['objects']
+            data = label['frames'][0]['objects']
             data = self.filter_data(data)
             gt = np.zeros((len(data), 5))
             for idx, obj in enumerate(data):
@@ -76,7 +60,7 @@ class BddDataset(AutoDriveDataset):
             rec = [{
                 'image': image_path,
                 'label': gt,
-                #'mask': mask_path,
+                # 'mask': mask_path,
                 'lane': lane_path
             }]
 

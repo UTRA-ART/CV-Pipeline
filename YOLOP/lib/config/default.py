@@ -6,7 +6,7 @@ _C = CN()
 
 _C.LOG_DIR = 'runs/'
 _C.GPUS = (0,1)     
-_C.WORKERS = 8
+_C.WORKERS = 1
 _C.PIN_MEMORY = False
 _C.PRINT_FREQ = 20
 _C.AUTO_RESUME =False       # Resume from the last training interrupt
@@ -50,10 +50,10 @@ _C.LOSS.LL_IOU_GAIN = 0.2 # lane line iou loss gain
 
 # DATASET related params
 _C.DATASET = CN(new_allowed=True)
-_C.DATASET.DATAROOT = 'C:/Users/binha/OneDrive/Desktop/UTRA ART/YOLOP/dataset/bdd/bdd100k/images/100k'       # the path of images folder
-_C.DATASET.LABELROOT = 'C:/Users/binha/OneDrive/Desktop/UTRA ART/YOLOP/dataset/bdd/bdd100k/labels/100k'      # the path of det_annotations folder
-_C.DATASET.MASKROOT = 'C:/Users/binha/OneDrive/Desktop/UTRA ART/YOLOP/dataset/bdd/bdd_seg_gt'                # the path of da_seg_annotations folder
-_C.DATASET.LANEROOT = 'C:/Users/binha/OneDrive/Desktop/UTRA ART/YOLOP/dataset/bdd/bdd100k/labels/100k/bdd_lane_gt'               # the path of ll_seg_annotations folder
+_C.DATASET.DATAROOT = 'dataset/images'       # the path of images folder
+_C.DATASET.LABELROOT = 'dataset/det_annotations'      # the path of det_annotations folder
+# _C.DATASET.MASKROOT = '/home/zwt/bdd/bdd_seg_gt'                # the path of da_seg_annotations folder
+_C.DATASET.LANEROOT = 'dataset/ll_seg_annotations'               # the path of ll_seg_annotations folder
 _C.DATASET.DATASET = 'BddDataset'
 _C.DATASET.TRAIN_SET = 'train'
 _C.DATASET.TEST_SET = 'val'
