@@ -249,7 +249,7 @@ class AutoDriveDataset(Dataset):
 
     @staticmethod
     def collate_fn(batch):
-        img, label, paths, shapes= zip(*batch)
+        img, label, paths, shapes = zip(*batch)
         label_det, label_seg, label_lane = [], [], []
         for i, l in enumerate(label):
             l_det, l_seg, l_lane = l
@@ -257,5 +257,5 @@ class AutoDriveDataset(Dataset):
             label_det.append(l_det)
             label_seg.append(l_seg)
             label_lane.append(l_lane)
-        return torch.stack(img, 0), [torch.cat(label_det, 0), torch.stack(label_seg, 0), torch.stack(label_lane, 0)], paths, shapes
+        return torch.stack(img, 0), [torch.cat(label_det, 0), None, torch.stack(label_lane, 0)], paths, shapes
 

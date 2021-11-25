@@ -209,13 +209,12 @@ def main():
             # print(model.named_parameters)
             for k, v in model.named_parameters():
                 v.requires_grad = True  # train all layers
-                if k.split(".")[1] in Encoder_para_idx + Da_Seg_Head_para_idx + Ll_Seg_Head_para_idx:
+                if k.split(".")[1] in Encoder_para_idx + Ll_Seg_Head_para_idx:
                     print('freezing %s' % k)
                     v.requires_grad = False
 
-        
         # TODO: Transfer learning lane segmentaiton 
-            # remove drivable area 
+        # remove drivable area
         if cfg.TRAIN.ENC_SEG_ONLY:  # Only train encoder and two segmentation branchs
             logger.info('freeze Det head...')
             for k, v in model.named_parameters():
@@ -228,17 +227,16 @@ def main():
             logger.info('freeze two Seg heads...')
             for k, v in model.named_parameters():
                 v.requires_grad = True  # train all layers
-                if k.split(".")[1] in Da_Seg_Head_para_idx + Ll_Seg_Head_para_idx:
+                if k.split(".")[1] in Ll_Seg_Head_para_idx:
                     print('freezing %s' % k)
                     v.requires_grad = False
-
 
         if cfg.TRAIN.LANE_ONLY: 
             logger.info('freeze encoder and Det head and Da_Seg heads...')
             # print(model.named_parameters)
             for k, v in model.named_parameters():
                 v.requires_grad = True  # train all layers
-                if k.split(".")[1] in Encoder_para_idx + Da_Seg_Head_para_idx + Det_Head_para_idx:
+                if k.split(".")[1] in Encoder_para_idx + Det_Head_para_idx:
                     print('freezing %s' % k)
                     v.requires_grad = False
 
@@ -264,16 +262,13 @@ def main():
                 elif check_idx in freeze_encoder_idx or check_idx in freeze_LL_idx:
                     print('freezing %s' % k)
                     v.requires_grad = False
-                
-                           
-            
+
     if rank == -1 and torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model, device_ids=cfg.GPUS)
         # model = torch.nn.DataParallel(model, device_ids=cfg.GPUS).cuda()
     # # DDP mode
     if rank != -1:
         model = DDP(model, device_ids=[args.local_rank], output_device=args.local_rank,find_unused_parameters=True)
-
 
     # assign model params
     model.gr = 1.0
@@ -346,7 +341,7 @@ def main():
     num_warmup = max(round(cfg.TRAIN.WARMUP_EPOCHS * num_batch), 1000)
     scaler = amp.GradScaler(enabled=device.type != 'cpu')
     print('=> start training...')
-    for epoch in range(begin_epoch+1, cfg.TRAIN.END_EPOCH+1):
+    for epoch in range(begin_epoch + 1, cfg.TRAIN.END_EPOCH + 1):
         if rank != -1:
             train_loader.sampler.set_epoch(epoch)
         # train for one epoch
@@ -358,12 +353,12 @@ def main():
         # evaluate on validation set
         if (epoch % cfg.TRAIN.VAL_FREQ == 0 or epoch == cfg.TRAIN.END_EPOCH) and rank in [-1, 0]:
             # print('validate')
-            da_segment_results,ll_segment_results,detect_results, total_loss,maps, times = validate(
+            da_segment_results, ll_segment_results, detect_results, total_loss,maps, times = validate(
                 epoch,cfg, valid_loader, valid_dataset, model, criterion,
                 final_output_dir, tb_log_dir, writer_dict,
                 logger, device, rank
             )
-            fi = fitness(np.array(detect_results).reshape(1, -1))  #目标检测评价指标
+            fi = fitness(np.array(detect_results).reshape(1, -1))
 
             msg = 'Epoch: [{0}]    Loss({loss:.3f})\n' \
                       'Driving area Segment: Acc({da_seg_acc:.3f})    IOU ({da_seg_iou:.3f})    mIOU({da_seg_miou:.3f})\n' \
