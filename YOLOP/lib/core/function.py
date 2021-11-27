@@ -77,8 +77,7 @@ def train(cfg, train_loader, model, criterion, optimizer, scaler, epoch, num_bat
             target = [tgt.to(device) if tgt is not None else None for tgt in target]
         with amp.autocast(enabled=device.type != 'cpu'):
             outputs = model(input)
-            total_loss, head_losses = criterion(outputs, target, shapes,model)
-            # print(head_losses)
+            total_loss, head_losses = criterion(outputs, target, shapes, model)
 
         # compute gradient and do update step
         optimizer.zero_grad()

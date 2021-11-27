@@ -64,6 +64,8 @@ class MultiHeadLoss(nn.Module):
             head_losses: list containing losses
 
         """
+        predictions = predictions[0], None, predictions[1]  # HACK(dchu): inserted None to pad
+
         cfg = self.cfg
         device = targets[0].device
         lcls, lbox, lobj = torch.zeros(1, device=device), torch.zeros(1, device=device), torch.zeros(1, device=device)
@@ -107,16 +109,16 @@ class MultiHeadLoss(nn.Module):
                     lcls += BCEcls(ps[:, 5:], t)  # BCE
             lobj += BCEobj(pi[..., 4], tobj) * balance[i]  # obj loss
 
-        drive_area_seg_predicts = predictions[1].view(-1)
-        drive_area_seg_targets = targets[1].view(-1)
-        lseg_da = BCEseg(drive_area_seg_predicts, drive_area_seg_targets)
+        # drive_area_seg_predicts = predictions[1].view(-1)
+        # drive_area_seg_targets = targets[1].view(-1)
+        # lseg_da = BCEseg(drive_area_seg_predicts, drive_area_seg_targets)
 
         lane_line_seg_predicts = predictions[2].view(-1)
         lane_line_seg_targets = targets[2].view(-1)
         lseg_ll = BCEseg(lane_line_seg_predicts, lane_line_seg_targets)
 
         metric = SegmentationMetric(2)
-        nb, _, height, width = targets[1].shape
+        nb, _, height, width = targets[2].shape     # NOTE(dchu): this was originally targets[1]
         pad_w, pad_h = shapes[0][1][1]
         pad_w = int(pad_w)
         pad_h = int(pad_h)
@@ -134,13 +136,13 @@ class MultiHeadLoss(nn.Module):
         lobj *= cfg.LOSS.OBJ_GAIN * s * (1.4 if no == 4 else 1.) * self.lambdas[1]
         lbox *= cfg.LOSS.BOX_GAIN * s * self.lambdas[2]
 
-        lseg_da *= cfg.LOSS.DA_SEG_GAIN * self.lambdas[3]
+        # lseg_da *= cfg.LOSS.DA_SEG_GAIN * self.lambdas[3]
         lseg_ll *= cfg.LOSS.LL_SEG_GAIN * self.lambdas[4]
         liou_ll *= cfg.LOSS.LL_IOU_GAIN * self.lambdas[5]
 
         
         if cfg.TRAIN.DET_ONLY or cfg.TRAIN.ENC_DET_ONLY or cfg.TRAIN.DET_ONLY:
-            lseg_da = 0 * lseg_da
+            # lseg_da = 0 * lseg_da
             lseg_ll = 0 * lseg_ll
             liou_ll = 0 * liou_ll
             
@@ -153,7 +155,7 @@ class MultiHeadLoss(nn.Module):
             lcls = 0 * lcls
             lobj = 0 * lobj
             lbox = 0 * lbox
-            lseg_da = 0 * lseg_da
+            # lseg_da = 0 * lseg_da
 
         if cfg.TRAIN.DRIVABLE_ONLY:
             lcls = 0 * lcls
@@ -162,10 +164,10 @@ class MultiHeadLoss(nn.Module):
             lseg_ll = 0 * lseg_ll
             liou_ll = 0 * liou_ll
 
-        loss = lbox + lobj + lcls + lseg_da + lseg_ll + liou_ll
-        # loss = lseg
-        # return loss * bs, torch.cat((lbox, lobj, lcls, loss)).detach()
-        return loss, (lbox.item(), lobj.item(), lcls.item(), lseg_da.item(), lseg_ll.item(), liou_ll.item(), loss.item())
+        # Old: loss = lbox + lobj + lcls + lseg_da + lseg_ll + liou_ll
+        loss = lbox + lobj + lcls + lseg_ll + liou_ll
+
+        return loss, (lbox.item(), lobj.item(), lcls.item(), None, lseg_ll.item(), liou_ll.item(), loss.item())
 
 
 def get_loss(cfg, device):
