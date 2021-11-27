@@ -74,10 +74,7 @@ def train(cfg, train_loader, model, criterion, optimizer, scaler, epoch, num_bat
         data_time.update(time.time() - start)
         if not cfg.DEBUG:
             input = input.to(device, non_blocking=True)
-            assign_target = []
-            for tgt in target:
-                assign_target.append(tgt.to(device))
-            target = assign_target
+            target = [tgt.to(device) if tgt is not None else None for tgt in target]
         with amp.autocast(enabled=device.type != 'cpu'):
             outputs = model(input)
             total_loss, head_losses = criterion(outputs, target, shapes,model)
