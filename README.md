@@ -4,3 +4,7 @@ Repository for the entire CV pipeline for Photon and Caffeine for the 2021-2022 
 The pipeline contains plug and play modules that are used based on competition guidelines. The full pipeline is highlighted as follows
 
 ![CV Pipeline Model](resources/images/pipeline_model.PNG)
+
+## Style Guidelines
+
+See PEP8 style-guide [here](https://www.python.org/dev/peps/pep-0008/)
