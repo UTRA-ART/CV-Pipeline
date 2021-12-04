@@ -5,4 +5,5 @@ The pipeline contains plug and play modules that are used based on competition g
 
 ![CV Pipeline Model](resources/images/pipeline_model.PNG)
 
+Changing this file.
 
