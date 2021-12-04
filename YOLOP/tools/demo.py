@@ -66,11 +66,9 @@ def detect(cfg,opt):
         dataset = LoadImages(opt.source, img_size=opt.img_size)
         bs = 1  # batch_size
 
-
     # Get names and colors
     names = model.module.names if hasattr(model, 'module') else model.names
     colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
-
 
     # Run inference
     t0 = time.time()
@@ -92,8 +90,6 @@ def detect(cfg,opt):
         t1 = time_synchronized()
         det_out, da_seg_out,ll_seg_out= model(img)
         t2 = time_synchronized()
-        # if i == 0:
-        #     print(det_out)
         inf_out, _ = det_out
         inf_time.update(t2-t1,img.size(0))
 
@@ -120,7 +116,6 @@ def detect(cfg,opt):
         da_seg_mask = da_seg_mask.int().squeeze().cpu().numpy()
         # da_seg_mask = morphological_process(da_seg_mask, kernel_size=7)
 
-        
         ll_predict = ll_seg_out[:, :,pad_h:(height-pad_h),pad_w:(width-pad_w)]
         ll_seg_mask = torch.nn.functional.interpolate(ll_predict, scale_factor=int(1/ratio), mode='bilinear')
         _, ll_seg_mask = torch.max(ll_seg_mask, 1)
@@ -158,8 +153,6 @@ def detect(cfg,opt):
     print('Results saved to %s' % Path(opt.save_dir))
     print('Done. (%.3fs)' % (time.time() - t0))
     print('inf : (%.4fs/frame)   nms : (%.4fs/frame)' % (inf_time.avg,nms_time.avg))
-
-
 
 
 if __name__ == '__main__':
