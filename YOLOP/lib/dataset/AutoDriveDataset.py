@@ -229,7 +229,8 @@ class AutoDriveDataset(Dataset):
         # _ = show_seg_result(img, gt_mask, idx, 0, save_dir='debug', is_gt=True)
         
 
-        target = [labels_out, seg_label, lane_label]
+        #target = [labels_out, seg_label, lane_label]
+        target = [labels_out, None, lane_label]
         img = self.transform(img)
 
         return img, target, data["image"], shapes
