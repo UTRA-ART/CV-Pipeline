@@ -50,9 +50,8 @@ def train(cfg, train_loader, model, criterion, optimizer, scaler, epoch, num_bat
     start = time.time()
 
 
-    print("\n\n\n\n\\n\n\n\n\n\\n\n\n\n\\n")
+    print("\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     print(train_loader)
-
 
     for i, (input, target, paths, shapes) in enumerate(train_loader):
         intermediate = time.time()
