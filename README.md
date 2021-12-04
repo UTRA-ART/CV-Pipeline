@@ -4,6 +4,6 @@ Repository for the entire CV pipeline for Photon and Caffeine for the 2021-2022 
 The pipeline contains plug and play modules that are used based on competition guidelines. The full pipeline is highlighted as follows
 
 
-Yay! This is a random change! Tanmay is even better.
+Yay! This is a random change!
 
 ![CV Pipeline Model](resources/images/pipeline_model.PNG)
