@@ -6,6 +6,6 @@ The pipeline contains plug and play modules that are used based on competition g
 
 Yay! This is a random change! *
 
-another random change, andrew is the bestest. So is David!
+another random change, andrew is the bestest. So is David! This is Ammar..................
 
 ![CV Pipeline Model](resources/images/pipeline_model.PNG)
