@@ -1,0 +1,1 @@
+The purpose of this branch is to set up YOLOv4 for use in object detection.
