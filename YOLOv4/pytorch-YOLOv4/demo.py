@@ -21,7 +21,7 @@ import torch
 import argparse
 
 """hyper parameters"""
-use_cuda = True
+use_cuda = False
 
 def detect_cv2(cfgfile, weightfile, imgfile):
     import cv2
@@ -148,7 +148,7 @@ def get_args():
     parser.add_argument('-imgfile', type=str,
                         default='./data/mscoco2017/train2017/190109_180343_00154162.jpg',
                         help='path of your image file.', dest='imgfile')
-    parser.add_argument('-torch', type=bool, default=false,
+    parser.add_argument('-torch', type=bool, default=False,
                         help='use torch weights')
     args = parser.parse_args()
 
