@@ -132,3 +132,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Ignoring YOLOv4 weight files
+/YOLOv4/pytorch-YOLOv4/weights
