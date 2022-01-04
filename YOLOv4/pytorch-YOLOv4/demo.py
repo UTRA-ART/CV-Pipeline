@@ -21,7 +21,7 @@ import torch
 import argparse
 
 """hyper parameters"""
-use_cuda = False
+use_cuda = True
 
 def detect_cv2(cfgfile, weightfile, imgfile):
     import cv2
