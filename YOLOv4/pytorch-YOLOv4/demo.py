@@ -28,7 +28,12 @@ def detect_cv2(cfgfile, weightfile, imgfile):
     m = Darknet(cfgfile)
 
     m.print_network()
-    m.load_weights(weightfile)
+    if args.torch:
+        model = torch.load(weightfile)
+        if use_cuda:
+            model.cuda()
+    else:
+        m.load_weights(weightfile)
     print('Loading weights from %s... Done!' % (weightfile))
 
     if use_cuda:
@@ -49,7 +54,7 @@ def detect_cv2(cfgfile, weightfile, imgfile):
 
     for i in range(2):
         start = time.time()
-        boxes = do_detect(m, sized, 0.4, 0.6, use_cuda)
+        boxes = do_detect(model, sized, 0.4, 0.6, use_cuda)
         finish = time.time()
         if i == 1:
             print('%s: Predicted in %f seconds.' % (imgfile, (finish - start)))
@@ -143,13 +148,13 @@ def get_args():
     parser.add_argument('-cfgfile', type=str, default='./cfg/yolov4.cfg',
                         help='path of cfg file', dest='cfgfile')
     parser.add_argument('-weightfile', type=str,
-                         default='./weights/yolov4.weights',
+                         default='weights/yolov4.pth',
                         # default='./checkpoints/Yolov4_epoch1.pth',
                         help='path of trained model.', dest='weightfile')
     parser.add_argument('-imgfile', type=str,
-                        default='./data/dog1.jpg',
+                        default='./data/dog.jpg',
                         help='path of your image file.', dest='imgfile')
-    parser.add_argument('-torch', type=bool, default=False,
+    parser.add_argument('-torch', type=bool, default=True,
                         help='use torch weights')
     args = parser.parse_args()
 
