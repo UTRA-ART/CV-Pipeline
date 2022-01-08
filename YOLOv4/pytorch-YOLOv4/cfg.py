@@ -26,8 +26,8 @@ Cfg.gpu = '1'
 
 Cfg.batch = 1
 Cfg.subdivisions = 1
-Cfg.width = 608
-Cfg.height = 608
+Cfg.width = 416
+Cfg.height = 416
 Cfg.channels = 3
 Cfg.momentum = 0.949
 Cfg.decay = 0.0005
@@ -49,7 +49,7 @@ Cfg.mixup = 0
 
 Cfg.letter_box = 0
 Cfg.jitter = 0.2
-Cfg.classes = 20
+Cfg.classes = 1
 Cfg.track = 0
 Cfg.w = Cfg.width
 Cfg.h = Cfg.height

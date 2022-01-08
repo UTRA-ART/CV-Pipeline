@@ -424,22 +424,23 @@ def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=
                 eval_model.load_state_dict(model.state_dict())
             eval_model.cuda()
             
-            evaluator = evaluate(eval_model, val_loader, config, device)
-            del eval_model
+            
+            # evaluator = evaluate(eval_model, val_loader, config, device)
+            # del eval_model
 
-            stats = evaluator.coco_eval['bbox'].stats
-            writer.add_scalar('train/AP', stats[0], global_step)
-            writer.add_scalar('train/AP50', stats[1], global_step)
-            writer.add_scalar('train/AP75', stats[2], global_step)
-            writer.add_scalar('train/AP_small', stats[3], global_step)
-            writer.add_scalar('train/AP_medium', stats[4], global_step)
-            writer.add_scalar('train/AP_large', stats[5], global_step)
-            writer.add_scalar('train/AR1', stats[6], global_step)
-            writer.add_scalar('train/AR10', stats[7], global_step)
-            writer.add_scalar('train/AR100', stats[8], global_step)
-            writer.add_scalar('train/AR_small', stats[9], global_step)
-            writer.add_scalar('train/AR_medium', stats[10], global_step)
-            writer.add_scalar('train/AR_large', stats[11], global_step)
+            # stats = evaluator.coco_eval['bbox'].stats
+            # writer.add_scalar('train/AP', stats[0], global_step)
+            # writer.add_scalar('train/AP50', stats[1], global_step)
+            # writer.add_scalar('train/AP75', stats[2], global_step)
+            # writer.add_scalar('train/AP_small', stats[3], global_step)
+            # writer.add_scalar('train/AP_medium', stats[4], global_step)
+            # writer.add_scalar('train/AP_large', stats[5], global_step)
+            # writer.add_scalar('train/AR1', stats[6], global_step)
+            # writer.add_scalar('train/AR10', stats[7], global_step)
+            # writer.add_scalar('train/AR100', stats[8], global_step)
+            # writer.add_scalar('train/AR_small', stats[9], global_step)
+            # writer.add_scalar('train/AR_medium', stats[10], global_step)
+            # writer.add_scalar('train/AR_large', stats[11], global_step)
 
             if save_cp:
                 try:
