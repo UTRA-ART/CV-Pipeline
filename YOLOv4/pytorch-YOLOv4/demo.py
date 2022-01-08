@@ -5,7 +5,7 @@
 @File          : demo.py
 @Noice         :
 @Modificattion :
-    @Author    :
+    @Author    : Ammar-V
     @Time      :
     @Detail    :
 '''
@@ -14,6 +14,7 @@
 # import time
 # from PIL import Image, ImageDraw
 # from models.tiny_yolo import TinyYoloNet
+from models import Yolov4
 from tool.utils import *
 from tool.torch_utils import *
 from tool.darknet2pytorch import Darknet
@@ -21,7 +22,7 @@ import torch
 import argparse
 
 """hyper parameters"""
-use_cuda = True
+use_cuda = False
 
 def detect_cv2(cfgfile, weightfile, imgfile):
     import cv2
@@ -29,7 +30,12 @@ def detect_cv2(cfgfile, weightfile, imgfile):
 
     m.print_network()
     if args.torch:
-        model = torch.load(weightfile)
+        try:
+            model = Yolov4(weightfile, 1, True)
+            print('conv137')
+        except:
+            model = torch.load(weightfile)
+        #model.load_state_dict(torch.load(weightfile))
         if use_cuda:
             model.cuda()
     else:
@@ -38,14 +44,15 @@ def detect_cv2(cfgfile, weightfile, imgfile):
 
     if use_cuda:
         m.cuda()
-
     num_classes = m.num_classes
+    print(num_classes)
+
     if num_classes == 20:
         namesfile = 'data/voc.names'
     elif num_classes == 80:
         namesfile = 'data/coco.names'
     else:
-        namesfile = 'data/x.names'
+        namesfile = 'data/FirstTest/train/_classes.txt'
     class_names = load_class_names(namesfile)
 
     img = cv2.imread(imgfile)
@@ -148,7 +155,7 @@ def get_args():
     parser.add_argument('-cfgfile', type=str, default='./cfg/yolov4.cfg',
                         help='path of cfg file', dest='cfgfile')
     parser.add_argument('-weightfile', type=str,
-                         default='weights/yolov4.pth',
+                         default='weights/yolov4.conv.137.pth',
                         # default='./checkpoints/Yolov4_epoch1.pth',
                         help='path of trained model.', dest='weightfile')
     parser.add_argument('-imgfile', type=str,

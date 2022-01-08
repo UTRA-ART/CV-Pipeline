@@ -422,6 +422,7 @@ class Yolov4(nn.Module):
         self.neck = Neck(inference)
         # yolov4conv137
         if yolov4conv137weight:
+            print('using conv137')
             _model = nn.Sequential(self.down1, self.down2, self.down3, self.down4, self.down5, self.neck)
             pretrained_dict = torch.load(yolov4conv137weight)
 

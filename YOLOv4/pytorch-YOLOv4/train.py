@@ -127,12 +127,13 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, GIoU=False, DIoU=False, CIoU=False
     return iou
 
 
-class Yolo_loss(nn.Module):
-    def __init__(self, n_classes=80, n_anchors=3, device=None, batch=2):
+###### CHANGE THE VARIABLES HERE IF EDITING CFG FILE #######
+class Yolo_loss(nn.Module): #
+    def __init__(self, n_classes=1, n_anchors=3, device=None, batch=2):
         super(Yolo_loss, self).__init__()
         self.device = device
         self.strides = [8, 16, 32]
-        image_size = 608
+        image_size = 416
         self.n_classes = n_classes
         self.n_anchors = n_anchors
 
@@ -208,7 +209,7 @@ class Yolo_loss(nn.Module):
             truth_box[:n, 0] = truth_x_all[b, :n]
             truth_box[:n, 1] = truth_y_all[b, :n]
 
-            pred_ious = bboxes_iou(pred[b].view(-1, 4), truth_box, xyxy=False)
+            pred_ious = bboxes_iou(pred[b].reshape(-1, 4), truth_box, xyxy=False)
             pred_best_iou, _ = pred_ious.max(dim=1)
             pred_best_iou = (pred_best_iou > self.ignore_thre)
             pred_best_iou = pred_best_iou.view(pred[b].shape[:3])
@@ -244,7 +245,7 @@ class Yolo_loss(nn.Module):
 
             # logistic activation for xy, obj, cls
             output[..., np.r_[:2, 4:n_ch]] = torch.sigmoid(output[..., np.r_[:2, 4:n_ch]])
-
+            
             pred = output[..., :4].clone()
             pred[..., 0] += self.grid_x[output_id]
             pred[..., 1] += self.grid_y[output_id]
@@ -421,7 +422,8 @@ def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=
                 eval_model.load_state_dict(model.module.state_dict())
             else:
                 eval_model.load_state_dict(model.state_dict())
-            eval_model.to(device)
+            eval_model.cuda()
+            
             evaluator = evaluate(eval_model, val_loader, config, device)
             del eval_model
 
@@ -448,7 +450,7 @@ def train(model, device, config, epochs=5, batch_size=1, save_cp=True, log_step=
                     pass
                 save_path = os.path.join(config.checkpoints, f'{save_prefix}{epoch + 1}.pth')
                 if isinstance(model, torch.nn.DataParallel):
-                    torch.save(model.moduel,state_dict(), save_path)
+                    torch.save(model.module.state_dict(), save_path)
                 else:
                     torch.save(model.state_dict(), save_path)
                 logging.info(f'Checkpoint {epoch + 1} saved !')
@@ -471,8 +473,8 @@ def evaluate(model, data_loader, cfg, device, logger=None, **kwargs):
     model.eval()
     # header = 'Test:'
 
-    coco = convert_to_coco_api(data_loader.dataset, bbox_fmt='coco')
-    coco_evaluator = CocoEvaluator(coco, iou_types = ["bbox"], bbox_fmt='coco')
+    coco = convert_to_coco_api(data_loader.dataset, bbox_fmt='yolo')
+    coco_evaluator = CocoEvaluator(coco, iou_types = ["bbox"], bbox_fmt='yolo')
 
     for images, targets in data_loader:
         model_input = [[cv2.resize(img, (cfg.w, cfg.h))] for img in images]
@@ -608,8 +610,10 @@ def _get_date_str():
 
 if __name__ == "__main__":
     logging = init_logger(log_dir='log')
-    cfg = get_args(**Cfg)
-    os.environ["CUDA_VISIBLE_DEVICES"] = cfg.gpu
+    #cfg = get_args(**Cfg)
+    from cfg import Cfg as cfg
+    
+    print(torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     logging.info(f'Using device {device}')
 
@@ -617,10 +621,11 @@ if __name__ == "__main__":
         model = Darknet(cfg.cfgfile)
     else:
         model = Yolov4(cfg.pretrained, n_classes=cfg.classes)
+        print('Using Pytorch...')
 
     if torch.cuda.device_count() > 1:
         model = torch.nn.DataParallel(model)
-    model.to(device=device)
+    model.cuda()
 
     try:
         train(model=model,

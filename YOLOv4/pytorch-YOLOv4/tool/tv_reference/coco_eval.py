@@ -81,7 +81,7 @@ class CocoEvaluator(object):
                 boxes = prediction["boxes"].tolist()
             else:
                 boxes = prediction["boxes"]
-                boxes = convert_to_xywh(boxes, fmt=self.bbox_fmt).tolist()
+                boxes = [convert_to_xywh(x, fmt=self.bbox_fmt) for x in boxes]
             scores = prediction["scores"].tolist()
             labels = prediction["labels"].tolist()
 
@@ -338,7 +338,7 @@ def evaluate(self):
         (imgId, catId): computeIoU(imgId, catId)
         for imgId in p.imgIds
         for catId in catIds}
-
+    
     evaluateImg = self.evaluateImg
     maxDet = p.maxDets[-1]
     evalImgs = [

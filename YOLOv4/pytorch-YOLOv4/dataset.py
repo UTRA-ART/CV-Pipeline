@@ -242,13 +242,14 @@ def draw_box(img, bboxes):
 class Yolo_dataset(Dataset):
     def __init__(self, label_path, cfg, train=True):
         super(Yolo_dataset, self).__init__()
+        '''
         if cfg.mixup == 2:
             print("cutmix=1 - isn't supported for Detector")
             raise
         elif cfg.mixup == 2 and cfg.letter_box:
             print("Combination: letter_box=1 & mosaic=1 - isn't supported, use only 1 of these parameters")
             raise
-
+        '''
         self.cfg = cfg
         self.train = train
 
@@ -294,7 +295,10 @@ class Yolo_dataset(Dataset):
                 bboxes = np.array(self.truth.get(img_path), dtype=np.float)
                 img_path = os.path.join(self.cfg.dataset_dir, img_path)
             img = cv2.imread(img_path)
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            if img is None:
+                print(img_path)
+            else:
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             if img is None:
                 continue
             oh, ow, oc = img.shape
@@ -391,8 +395,10 @@ class Yolo_dataset(Dataset):
         """
         img_path = self.imgs[index]
         bboxes_with_cls_id = np.array(self.truth.get(img_path), dtype=np.float)
-        img = cv2.imread(os.path.join(self.cfg.dataset_dir, img_path))
+        img = cv2.imread(os.path.join(self.cfg.dataset_dir_valid, img_path))
         # img_height, img_width = img.shape[:2]
+        #print('\n' + os.path.join(self.cfg.dataset_dir, img_path))
+        #print(img)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         # img = cv2.resize(img, (self.cfg.w, self.cfg.h))
         # img = torch.from_numpy(img.transpose(2, 0, 1)).float().div(255.0).unsqueeze(0)
@@ -409,7 +415,7 @@ class Yolo_dataset(Dataset):
         return img, target
 
 
-def get_image_id(filename:str) -> int:
+def get_image_id(filename:str) -> str:
     """
     Convert a string to a integer.
     Make sure that the images and the `image_id`s are in one-one correspondence.
@@ -429,11 +435,21 @@ def get_image_id(filename:str) -> int:
     # no = f"{int(no):04d}"
     # return int(lv+no)
 
-    print("You could also create your own 'get_image_id' function.")
-    # print(filename)
-    parts = filename.split('/')
-    id = int(parts[-1][0:-4])
-    # print(id)
+    #print("You could also create your own 'get_image_id' function.")
+    #print(filename)
+    #parts = filename.split('/')
+    #id = int(parts[-1][0:-4])
+    
+
+    id = ''
+    for index in filename:
+        try:
+            int(index)
+            id+= index
+        except:
+            id+= str(ord(index))
+    id = int(id[:10]) 
+    #print(id)
     return id
 
 
@@ -443,7 +459,7 @@ if __name__ == "__main__":
 
     random.seed(2020)
     np.random.seed(2020)
-    Cfg.dataset_dir = '/mnt/e/Dataset'
+    # Cfg.dataset_dir = '/mnt/e/Dataset'
     dataset = Yolo_dataset(Cfg.train_label, Cfg)
     for i in range(100):
         out_img, out_bboxes = dataset.__getitem__(i)
