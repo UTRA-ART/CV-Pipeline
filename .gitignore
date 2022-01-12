@@ -136,3 +136,7 @@ dmypy.json
 # Ignoring YOLOv4 files
 /YOLOv4/pytorch-YOLOv4/weights
 /YOLOv4/pytorch-YOLOv4/predictions
+*.pt
+*.weights
+/YOLOv4/PyTorch-YOLOv4-train/runs/
+/YOLOv4/PyTorch-YOLOv4-train/inference/
