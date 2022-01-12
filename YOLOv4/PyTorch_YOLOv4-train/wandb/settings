@@ -1,0 +1,5 @@
+[default]
+entity = ammarv
+project = uncategorized
+base_url = https://api.wandb.ai
+

@@ -1,0 +1,6 @@
+train: ./data/FirstTest/train/images
+val: ./data/FirstTest/valid/images
+test: ./data/FirstTest/valid/images
+
+nc: 1
+names: {0: 'Mannequin'}
