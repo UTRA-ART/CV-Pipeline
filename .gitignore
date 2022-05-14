@@ -149,4 +149,4 @@ models/
 .vscode/
 runs/
 wandb/
-.DS_Store/
+*.DS_Store/
