@@ -52,7 +52,6 @@ htmlcov/
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
 .hypothesis/
 .pytest_cache/
 
@@ -132,3 +131,21 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Ignoring YOLOv4 files
+YOLOv4/pytorch-YOLOv4/weights
+YOLOv4/pytorch-YOLOv4/predictions
+*.pt
+*.weights
+*.png
+*.txt
+*.jpg
+YOLOv4/PyTorch_YOLOv4-train/runs/
+YOLOv4/PyTorch_YOLOv4-train/inference/
+
+resources/
+log/
+models/
+.vscode/
+runs/
+wandb/
