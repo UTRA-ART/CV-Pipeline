@@ -9,7 +9,12 @@ The pipeline contains plug and play modules that are used based on competition g
 
 Style Guidelines
 ----------------
-See PEP8 style-guide [here](https://www.python.org/dev/peps/pep-0008/)
+Conform to the PEP8 style-guide [here](https://www.python.org/dev/peps/pep-0008/).
+
+Please start thinking about wrapping your line when you get to around 80 characters.
+
+### Linting
+* TODO: set up a repo-wide linter!
 
 
 Setup Instructions
