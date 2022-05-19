@@ -5,7 +5,7 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 import time
 
-img_pth = '/Users/jasonyuan/Desktop/Test9.png'
+img_pth = '/Users/jasonyuan/Desktop/Test2.png'
 
 # Add later to catch RankWarning
 # import numpy as np
@@ -40,7 +40,9 @@ def lane_fitting(points):
     x_width = abs(sorted_points_x[-1][1] - sorted_points_x[0][1])
     y_width = abs(sorted_points_y[-1][0] - sorted_points_y[0][0])
 
-    if (x_width < 15) or (y_width < 15):    # Hard-coded parameter, update maybe
+    if (y_width < 15) or ((x_width < 15) and (y_width < 15)):    # Hard-coded parameter, update maybe
+        print(y_width)
+        print(x_width)
         return [[],[]]
 
     # print(sorted_points)
@@ -77,6 +79,8 @@ def lane_fitting(points):
     x = fit_points[:,1]
     y = fit_points[:,0]
     tck,u = interpolate.splprep([x,y],k=3,s=32)
+    # print(u)
+    u = np.linspace(u[0]-0.25,u[-1]+0.25,500)
     # print(tck)
     out = interpolate.splev(u,tck)
     return out
