@@ -9,10 +9,14 @@ from scipy.ndimage.interpolation import map_coordinates
 from scipy.ndimage.filters import gaussian_filter
 
 # path 
-path = "/Users/andy/Documents/Data_Transformer/newdim.jpg"
+path = "Put the path of your image here"
+path1 = "Put the path of shadow.png here"
+path2 = "put the path of shadow2.jpeg here"
+path3 = "put the path of cone.jpeg here"
+path4 = "put the path of barrel.png here"
 
 # output window name
-window_name = "Output Frame"
+WINDOW_NAME = "Output Frame"
 
 # image dimensions
 HEIGHT = 720
@@ -28,7 +32,7 @@ def initialize(path):
     '''
     return cv2.imread(path)
 
-def display_image(image, window):
+def display_image(image, window=WINDOW_NAME):
     '''
     Prints input image to window and adds a waitkey.
 
@@ -40,13 +44,13 @@ def display_image(image, window):
     cv2.imshow(window, image) 
     cv2.waitKey(0)
 
-def make_black():
+def make_black(height=HEIGHT, width=WIDTH):
     '''
     Creates a black image of dimensions WIDTH x HEIGHT.
     '''
-    return np.zeros(shape=[HEIGHT, WIDTH, 3], dtype=np.uint8)
+    return np.zeros(shape=[height, width, 3], dtype=np.uint8)
 
-def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="factor"):
+def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="factor", height=HEIGHT, width=WIDTH):
     '''
     Resizes an image and overlays it onto a black image.
 
@@ -69,19 +73,19 @@ def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="fa
     Must be appied to labels as well.
     '''
     if (scaling_method == "factor"):
-        x = round(WIDTH * hor_factor)
-        y = round(HEIGHT * ver_factor)
+        x = round(width * hor_factor)
+        y = round(height * ver_factor)
     else: 
         x = hor_factor
         y = ver_factor
     new_dim = (x,y)
     cpy = np.copy(image)
     resized = cv2.resize(cpy, new_dim, interpolation=cv2.INTER_LINEAR)
-    ret = make_black()
+    ret = make_black(height=height, width=width)
     rh, rw, channels = resized.shape
 
     if (centerized == 1):
-        ret[round((HEIGHT - y)/2):(round((HEIGHT - y)/2) + rh),round((WIDTH - x)/2):(round((WIDTH - x)/2) + rw)] = resized
+        ret[round((height - y)/2):(round((height - y)/2) + rh),round((width - x)/2):(round((width - x)/2) + rw)] = resized
     else:
         ret[0:rh,0:rw] = resized
 
@@ -95,8 +99,8 @@ def reflect_image(image, axis):
     ------
     image: Input image of dimensions WIDTH x HEIGHT.
     axis: determines which axis the image is flipped along. 
-        0: flip over y-axis
-        1: flip over x-axis
+        0: flip over x-axis
+        1: flip over y-axis
         -1: flip over both axes
     
     NOTES
@@ -134,7 +138,7 @@ def rotate_image(image, deg):
     ret = np.copy(image)
     return cv2.warpAffine(ret, M, (int(cols),int(rows)))
 
-def shear_image(image, sh_x, sh_y):
+def shear_image(image, sh_x, sh_y, height=HEIGHT, width=WIDTH):
     '''
     Shears input image along x and y axes by specified amounts.
 
@@ -156,12 +160,11 @@ def shear_image(image, sh_x, sh_y):
                     [sh_y, 1, 0],
                     [0, 0, 1]])
     inv = np.linalg.inv(M)
-    col = np.float32([[1280], [720], [1]])
+    col = np.float32([[width], [height], [1]])
     res = np.dot(inv,col)
 
-    new_size = resize_image(image, int(math.floor(res[0][0])), int(math.floor(res[1][0])), center=0, method="coordinates")
-    display_image(new_size, window_name)
-    sheared_img = cv2.warpPerspective(new_size,M,(int(HEIGHT),int(WIDTH)))
+    new_size = resize_image(image, int(math.floor(res[0][0])), int(math.floor(res[1][0])), centerized=0, scaling_method="coordinates", height=height, width=width)
+    sheared_img = cv2.warpPerspective(new_size,M,(int(width),int(height)))
 
     return sheared_img
 
@@ -284,7 +287,6 @@ def apply_mosaic(image, seed, swaps):
     -----
     Must be applied to labels as well.
     '''
-    height, width, channels = image.shape
     ret = np.copy(image)
     cpy = np.copy(image)
 
@@ -334,7 +336,6 @@ def uniform_mosaic(image, seed, v_box, h_box):
     rows = int(HEIGHT/v_box)
     cols = int(WIDTH/h_box)
 
-    height, width, channels = image.shape
     ret = np.copy(image)
     cpy = np.copy(image)
 
@@ -374,7 +375,7 @@ def apply_saltpepper(image, seed, density=10):
     
     return ret
 
-def wave(image, amplitude=100, shift=0, stretch=0.02, axis=1):
+def apply_wave(image, amplitude=100, shift=0, stretch=0.02, axis=1):
     '''
     Creates a wave-like effect on image, based on a sinusoidal curve.
 
@@ -419,22 +420,6 @@ def wave(image, amplitude=100, shift=0, stretch=0.02, axis=1):
     
     return ret
 
-def generate_mask_shapes(seed, num_shapes):
-    '''
-    Generates a mask. Draws specified number of shapes that may overlap.
-    '''
-    ret = make_black()
-
-    for num in range(num_shapes):
-        cv2.rectangle()
-
-    cv2.rectangle()
-    cv2.circle()
-    cv2.ellipse()
-    cv2.polygon()
-
-    return ret
-
 def apply_mask(background: np.ndarray, mask: np.ndarray, image: np.ndarray) -> np.ndarray:
     '''
     Apply the mask and image to the background.
@@ -461,25 +446,15 @@ def apply_mask(background: np.ndarray, mask: np.ndarray, image: np.ndarray) -> n
 
     return (((255 - mask) * background + mask * image) / 255).astype(np.uint8)
 
-# def shadow(image, num, seed):
-#     for k in range(num):
-#         random.seed(seed*k)
-#         size = random.randint(50,200)
-#         random.seed(seed*k + 100)
-#         a = random.randint(0, HEIGHT - size - 1)
-#         random.seed(seed*k + 200)
-#         b = random.randint(0, WIDTH - size - 1)
-#         random.seed(seed*k + 300)
-#         shade = random.randint(400, 700)
-#         for i in range(size):
-#             for j in range(size):
-#                 image[a + i, b + j] = image[a + i, b + j] * shade / 1000
-
-#     return image
-
 def generate_mask_round(seed, num_shapes):
     '''
-    Generates a mask. Draws specified number of shapes that may overlap.
+    Generates a mask. Draws specified number of round shapes that may overlap.
+
+    INPUTS
+    ------
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    num_shapes: Number of round objects you want to generate
     '''
     ret = make_black()
 
@@ -507,19 +482,188 @@ def generate_mask_round(seed, num_shapes):
 
     return ret
 
-def shadow(image, num, seed, darken):   
+def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
+    '''
+    Generates a mask. Takes four given black and white images and randomly places them and applies shearing.
+
+    INPUTS
+    ------
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    freq1: Number of first object
+        any positive integer
+        default value is 1
+    freq2: Number of second object
+        any positive integer
+        default value is 1
+    freq3: Number of third object
+        any positive integer
+        default value is 1
+    freq4: Number of fourth object
+        any positive integer
+        default value is 1
+    '''
+    s1 = initialize(path1)
+    old_h1, old_w1, old_c1 = s1.shape
+    shadow1 = cv2.resize(s1, (int(old_w1/2),int(old_h1/2)), interpolation=cv2.INTER_LINEAR)
+    h1, w1, c1 = shadow1.shape
+    shadow2 = initialize(path2)
+    h2, w2, c2 = shadow2.shape
+    shadow3 = initialize(path3)
+    h3, w3, c3 = shadow3.shape 
+    s4 = initialize(path4)
+    old_h4, old_w4, old_c4 = s4.shape
+    shadow4 = cv2.resize(s4, (int(old_w4*2),int(old_h4*2)), interpolation=cv2.INTER_LINEAR)
+    h4, w4, c4, = shadow4.shape
+    temp = np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8) #matrix of 1s, will allow overlapping shadows to be darker
+
+    random.seed(seed + 10)
+    sh_x = random.randint(0, int((min(w1/h1, w2/h2, w3/h3, w4/h4)*100 - 3)/3))/100
+    random.seed(seed + 20)
+    sh_y = random.randint(0, int((min(h1/w1, h2/w2, h3/w3, h4/w4)*100 - 3)/3))/100
+    random.seed(seed + 30)
+    flip = random.randint(0,1)
+ 
+    for k in range(freq1):
+        shs1 = shear_image(np.full((h1, w1, 3), 255, dtype=np.uint8) - shadow1, sh_x, sh_y, height=h1, width=w1)
+        gss1 = apply_gaussian(shs1, kernel_x=50, kernel_y=50)
+        if (flip == 0): 
+            gss1 = reflect_image(gss1,1)
+
+        random.seed(seed*(k+1) + 200)
+        hc1 = random.randint(0, HEIGHT - h1)
+        random.seed(seed*(k+1) + 300)
+        wc1 = random.randint(0, WIDTH - w1)
+
+        temp[hc1:(hc1+h1), wc1:(wc1+w1)] = (temp[hc1:(hc1+h1), wc1:(wc1+w1)].astype(float) * np.divide((np.full((h1, w1, 3), 255, dtype=np.uint8) - gss1).astype(float), 255)).astype(int)
+
+    for k in range(freq2):
+        shs2 = shear_image(np.full((h2, w2, 3), 255, dtype=np.uint8) - shadow2, sh_x, sh_y, height=h2, width=w2)
+        gss2 = apply_gaussian(shs2, kernel_x=50, kernel_y=50)
+        if (flip == 0):
+            gss2 = reflect_image(gss2,1)
+
+        random.seed(seed*(k+1) + 600)
+        hc2 = random.randint(0, HEIGHT - h2)
+        random.seed(seed*(k+1) + 700)
+        wc2 = random.randint(0, WIDTH - w2)
+
+        temp[hc2:(hc2+h2), wc2:(wc2+w2)] = (temp[hc2:(hc2+h2), wc2:(wc2+w2)].astype(float) * np.divide((np.full((h2, w2, 3), 255, dtype=np.uint8) - gss2).astype(float), 255)).astype(int)
+
+    for k in range(freq3):
+        shs3 = shear_image(np.full((h3, w3, 3), 255, dtype=np.uint8) - shadow3, sh_x, sh_y, height=h3, width=w3)
+        gss3 = apply_gaussian(shs3, kernel_x=50, kernel_y=50)
+        if (flip == 0):
+            gss3 = reflect_image(gss3,1)
+
+        random.seed(seed*(k+1) + 1000)
+        hc3 = random.randint(0, HEIGHT - h3)
+        random.seed(seed*(k+1) + 1100)
+        wc3 = random.randint(0, WIDTH - w3)
+
+        temp[hc3:(hc3+h3), wc3:(wc3+w3)] = (temp[hc3:(hc3+h3), wc3:(wc3+w3)].astype(float) * np.divide((np.full((h3, w3, 3), 255, dtype=np.uint8) - gss3).astype(float), 255)).astype(int)
+
+    for k in range(freq4):
+        shs4 = shear_image(np.full((h4, w4, 3), 255, dtype=np.uint8) - shadow4, sh_x, sh_y, height=h4, width=w4)
+        gss4 = apply_gaussian(shs4, kernel_x=50, kernel_y=50)
+        if (flip == 0):
+            gss4 = reflect_image(gss4,1)
+
+        random.seed(seed*(k+1) + 1400)
+        hc4 = random.randint(0, HEIGHT - h4)
+        random.seed(seed*(k+1) + 1500)
+        wc4 = random.randint(0, WIDTH - w4)
+
+        temp[hc4:(hc4+h4), wc4:(wc4+w4)] = (temp[hc4:(hc4+h4), wc4:(wc4+w4)].astype(float) * np.divide((np.full((h4, w4, 3), 255, dtype=np.uint8) - gss4).astype(float), 255)).astype(int)
+
+    return np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8) - temp
+
+def shadow_round(image, num, seed, darken=0.4):   
+    '''
+    Applies a shadow with generate_mask_round.
+
+    INPUTS
+    ------
+    image: Input image that the shadow is applied to of dimensions WIDTH x HEIGHT
+    num: number of shadows
+        any positive integer
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    darken: Factor by which the shadow darkens the image
+        float in [0,1]
+        default is 0.4
+
+    NOTES
+    -----
+    Does not affect labels.
+    '''
     ret = apply_mask(image, apply_gaussian(generate_mask_round(seed, num)), colour(image, bf = darken, gf = darken, rf = darken))
+
+    return ret
+
+def shadow_object(image, seed, darken=0.4, freq1=1, freq2=1, freq3=1, freq4=1):   
+    '''
+    Applies a shadow with generate_mask_round.
+
+    INPUTS
+    ------
+    image: Input image that the shadow is applied to of dimensions WIDTH x HEIGHT
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    darken: Factor by which the shadow darkens the image
+        float in [0,1]
+        defult is 0.4
+    freq1: Number of first object
+        any positive integer
+        default value is 1
+    freq2: Number of second object
+        any positive integer
+        default value is 1
+    freq3: Number of third object
+        any positive integer
+        default value is 1
+    freq4: Number of fourth object
+        any positive integer
+        default value is 1
+
+    NOTES
+    -----
+    Does not affect labels.
+    ''' 
+    ret = apply_mask(image, generate_mask_object(seed, freq1=freq1, freq2=freq2, freq3=freq3, freq4=freq4), colour(image, bf = darken, gf = darken, rf = darken))
 
     return ret
 
 def raindrop(image, seed, num=40, kernel_x=50, kernel_y=200):
     '''
-    overlay gaussian blur onto groups of pixels?
-    shade groups of pixels?
+    Blurs round regions on an image to simulate the effect of raindrops on a lens.
+
+    INPUTS
+    ------
+    image: Input image that the shadow is applied to of dimensions WIDTH x HEIGHT
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    num: number of raindrops
+        any positive integer
+    kernel_x and kernel_y: Determine the blurring. 1 is added to both after they are multipled by 2 to ensure the input into the cv2.GaussianBlur function is odd
+        positive integers
+        default values for kerne;_x is 50 and kernel_y is 200.
+
+    NOTES
+    -----
+    Does not affect labels.
     '''
     return apply_mask(image, apply_gaussian(generate_mask_round(seed, num)), apply_gaussian(image, kernel_x = kernel_x, kernel_y = kernel_y))
 
 def glare_mask(seed):
+    '''
+    Generates a mask. Picks a focal point and draws triangles from the focal point to the edges of the image.
+
+    INPUTS
+    ------
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    '''
     ret = make_black()
 
     # center
@@ -593,134 +737,131 @@ def glare_mask(seed):
     return ret
 
 def lens_glare(image, seed):
+    '''
+    Brightens a region to simulate the effect of glare on a camera lens
+
+    INPUTS
+    ------
+    image: Input image of dimensions WIDTH x HEIGHT to be modified.
+    seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
+        any integer
+    
+    NOTES
+    -----
+    Does not affect labels.
+    '''
+
     return apply_mask(image, apply_gaussian(glare_mask(seed), kernel_x = 10, kernel_y = 10), np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8))
-
-def elastic_transform(image, alpha, sigma, random_state=None):
-    """Elastic deformation of images as described in [Simard2003]_.
-    .. [Simard2003] Simard, Steinkraus and Platt, "Best Practices for
-       Convolutional Neural Networks applied to Visual Document Analysis", in
-       Proc. of the International Conference on Document Analysis and
-       Recognition, 2003.
-    """
-    if random_state is None:
-        random_state = np.random.RandomState(None)
-
-    shape = image.shape
-    dx = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-    dy = gaussian_filter((random_state.rand(*shape) * 2 - 1), sigma, mode="constant", cval=0) * alpha
-    dz = np.zeros_like(dx)
-
-    x, y, z = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]), np.arange(shape[2]))
-    indices = np.reshape(y+dy, (-1, 1)), np.reshape(x+dx, (-1, 1)), np.reshape(z, (-1, 1))
-
-    distored_image = map_coordinates(image, indices, order=1, mode='reflect')
-    return distored_image.reshape(image.shape)
 
 if __name__ == "__main__":
     image = initialize(path)
 
-    #display_image(image, window_name)
+    display_image(image)
 
-    # black = make_black()
-    # display_image(black, window_name)
+    black = make_black()
+    display_image(black)
 
-    # resized = resize_image(image, 0.5, 0.25)
-    # display_image(resized, window_name)
+    resized = resize_image(image, 0.5, 0.25)
+    display_image(resized)
 
-    # sp1 = apply_saltpepper(image, 0)
-    # display_image(sp1, window_name)
+    sp1 = apply_saltpepper(image, 0)
+    display_image(sp1)
 
-    # sp2 = apply_saltpepper(image, 1)
-    # display_image(sp2, window_name)
+    sp2 = apply_saltpepper(image, 1)
+    display_image(sp2)
 
-    # sp3 = apply_saltpepper(image, 2)
-    # display_image(sp3, window_name)
+    sp3 = apply_saltpepper(image, 2)
+    display_image(sp3)
 
+    # # pixel_swap is very slow
     # pixel = pixel_swap(image, 100, 100000)
-    # display_image(pixel, window_name)
+    # display_image(pixel)
 
-    # ms1 = apply_mosaic(image, 10, 1000)
-    # display_image(ms1, window_name)
+    ms1 = apply_mosaic(image, 10, 1000)
+    display_image(ms1)
 
-    # ref0 = reflect(image, 0)
-    # display_image(ref0, window_name)
+    ms2 = apply_mosaic(image, 12, 100)
+    display_image(ms2)
 
-    # ref1 = reflect(image, 1)
-    # display_image(ref1, window_name)
+    ref1 = reflect_image(image, 0)
+    display_image(ref1)
 
-    # ref_1 = reflect(image, -1)
-    # display_image(ref_1, window_name)
+    ref2 = reflect_image(image, 1)
+    display_image(ref2)
 
-    # gs5 = gaussian(image, 5, 6)
-    # display_image(gs5, window_name)
+    ref3 = reflect_image(image, -1)
+    display_image(ref3)
 
-    # gs10 = gaussian(image, 10, 3)
-    # display_image(gs10, window_name)
+    gs1 = apply_gaussian(image, 5, 6)
+    display_image(gs1)
 
-    # gs20 = gaussian(image, 20, 25)
-    # display_image(gs20, window_name)
+    gs2 = apply_gaussian(image, 10, 3)
+    display_image(gs2)
 
-    # gs40 = gaussian(image, 40, 40)
-    # display_image(gs40, window_name)
+    gs3 = apply_gaussian(image, 20, 25)
+    display_image(gs3)
 
-    # rot1 = rotate(image, -60)
-    # display_image(rot1, window_name)
+    gs4 = apply_gaussian(image, 40, 40)
+    display_image(gs4)
 
-    # rot1 = rotate(image, 30)
-    # display_image(rot1, window_name)
+    rot1 = rotate_image(image, -60)
+    display_image(rot1)
 
-    # sh1 = shear(image, 0.4, 0.2)
-    # display_image(sh1, window_name)
+    rot2 = rotate_image(image, 30)
+    display_image(rot2)
 
-    # sh2 = shear(image, 0.7, 0.5)
-    # display_image(sh2, window_name)
+    sh1 = shear_image(image, 0.4, 0.2)
+    display_image(sh1)
 
-    # wv = wave(image)
-    # display_image(wv, window_name)
+    sh2 = shear_image(image, 0.7, 0.5)
+    display_image(sh2)
 
-    # ums1 = uniform_mosaic(image, 0, 5, 10)
-    # display_image(ums1, window_name)
+    wv1 = apply_wave(image)
+    display_image(wv1)
 
-    # ums2 = uniform_mosaic(image, 1, 16, 128)
-    # display_image(ums2, window_name)
+    wv2 = apply_wave(image, axis=0)
+    display_image(wv2)
 
-    # ums3 = uniform_mosaic(image, 1, 720, 1280)
-    # display_image(ums3, window_name)
+    ums1 = uniform_mosaic(image, 0, 5, 10)
+    display_image(ums1)
 
-    # ums3 = uniform_mosaic(image, 0, 9, 10)
-    # display_image(ums3, window_name)
+    ums2 = uniform_mosaic(image, 1, 16, 128)
+    display_image(ums2)
 
-    # gray = colour(image, channel="gray")
-    # display_image(gray, window_name)
+    ums3 = uniform_mosaic(image, 0, 9, 10)
+    display_image(ums3)
+
+    gray = colour(image, mode="gray")
+    display_image(gray)
  
-    # blue = colour (image, 0,1,0)
-    # display_image(blue, window_name)
+    blue = colour(image, 0,1,0)
+    display_image(blue)
 
-    # green = colour (image, 1, 0, 1)
-    # display_image(green, window_name)
+    green = colour (image, 1, 0, 1)
+    display_image(green)
 
-    # red = colour (image, 1 , 1 , 0)
-    # display_image(red, window_name)
+    red = colour (image, 1 , 1 , 0)
+    display_image(red)
 
-    # boost_red = colour (image, 1, 1, 2)
-    # display_image(boost_red, window_name)
+    boost_red = colour (image, 1, 1, 2)
+    display_image(boost_red)
 
-    # sdw1 = shadow(image, 10, 1)
-    # display_image(sdw1, window_name)
+    shdr = shadow_round(image, 10, 1)
+    display_image(shdr)
 
-    # blur = raindrop(image, 1)
-    # display_image(blur, window_name)
+    rain1 = raindrop(image, 1, num=20, kernel_x = 300)
+    display_image(rain1)
 
-    # cool = generate_mask_round(2, 20)
-    # display_image(cool, window_name)
+    rain2 = raindrop(image, 10)
+    display_image(rain2)
 
-    # rain = raindrop(image, 10)
-    # display_image(rain, window_name)
+    shdo1 = shadow_object(image, 40, freq1 = 2, freq2 = 1, freq3 = 0, freq4 = 0)
+    display_image(shdo1)
 
-    shd = shadow(image, 40, 15, 0.5)
-    display_image(shd, window_name)
+    shdo2 = shadow_object(image, 2)
+    display_image(shdo2)
 
-    # glare = lens_glare(image,5)
-    # display_image(glare, window_name)
+    glare = lens_glare(image,5)
+    display_image(glare)
 
     cv2.destroyAllWindows()
