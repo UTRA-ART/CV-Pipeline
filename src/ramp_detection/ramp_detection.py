@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import List, Tuple
 
 import cv2
 import numpy as np
@@ -31,11 +31,11 @@ def calibrate_green(calib_img_path: str, tol: int = 5) -> Tuple[
     return (min_hue, max_hue), (min_lum, max_lum), (min_sat, max_sat)
 
 
-def get_ramp(
+def get_green(
     img_hls: np.ndarray,
     hue_range: Tuple[int, int],
     lum_range: Tuple[int, int],
-    sat_range: Tuple[int, int]
+    sat_range: Tuple[int, int],
 ) -> np.ndarray:
     hue = img_hls[:, :, 0]
     min_hue, max_hue = hue_range
@@ -54,13 +54,37 @@ def get_ramp(
     return within_ramp.astype(np.uint8) * 255
 
 
+def get_large_contours(
+    img_bgr: np.ndarray, min_area: float = 30.0
+) -> List[np.ndarray]:
+    # Get contours
+    img_gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+    ret, thresh = cv2.threshold(img_gray, 127, 255, 0)
+    contours, hierarchy = cv2.findContours(
+        thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    img_bgr_copy = img_bgr.copy()
+    cv2.drawContours(img_bgr_copy, contours, -1, (0, 255, 0), 3)
+    cv2.imshow("All contours", img_bgr_copy)
+
+    # Sort by area
+    large_contours = [c for c in contours if cv2.contourArea(c) > min_area]
+    cv2.drawContours(img_bgr_copy, large_contours, -1, (255, 0, 0), 3)
+    cv2.imshow("Large contours", img_bgr_copy)
+
+    return large_contours
+
+
 def main():
     hue_range, lum_range, sat_range = calibrate_green(CALIB_IMG_PATH, TOLERANCE)
     img = cv2.imread(TEST_IMAGE_PATH)
     img_hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
 
-    within_ramp = get_ramp(img_hls, hue_range, lum_range, sat_range)
+    within_ramp = get_green(img_hls, hue_range, lum_range, sat_range)
     cv2.imshow("Pixels Belonging to the Ramp", within_ramp)
+
+    get_large_contours(img, 1000)
 
     # End of program
     cv2.waitKey(0)
