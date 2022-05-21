@@ -2,18 +2,22 @@ import os
 from pathlib import Path
 from random import randint
 
-TRAIN_NUM = 1635
-VAL_NUM = 467
-TEST_NUM = 233
-TOTAL = 2335 - 1
+NUM_TOTAL_IMGS = 4627
+NUMF_TRAIN_IMGS = int(0.7 * NUM_TOTAL_IMGS)  # 3239
+NUM_VAL_IMGS = int(0.2 * NUM_TOTAL_IMGS)  # 925
+NUM_TEST_IMGS = NUM_TOTAL_IMGS - NUMF_TRAIN_IMGS - NUM_VAL_IMGS  # 463
 
 count = 0
 
-for num, type in [(TRAIN_NUM, "train"), (VAL_NUM, "valid"), (TEST_NUM, "test")]:
+for num, type in [
+    (NUMF_TRAIN_IMGS, "train"),
+    (NUM_VAL_IMGS, "valid"),
+    (NUM_TEST_IMGS, "test"),
+]:
     for i in range(num):
         files = os.listdir("./dataset/data/")
         print(len(files))
-        image_path = Path("./dataset/data/" + files[randint(0, TOTAL)])
+        image_path = Path("./dataset/data/" + files[randint(0, NUM_TOTAL_IMGS - 1)])
         label_path = Path(
             "./dataset/label/" + os.path.splitext(image_path.name)[0] + ".txt"
         )
@@ -23,4 +27,4 @@ for num, type in [(TRAIN_NUM, "train"), (VAL_NUM, "valid"), (TEST_NUM, "test")]:
 
         os.rename(image_path, out_img)
         os.rename(label_path, out_lbl)
-        TOTAL = TOTAL - 1
+        NUM_TOTAL_IMGS = NUM_TOTAL_IMGS - 1

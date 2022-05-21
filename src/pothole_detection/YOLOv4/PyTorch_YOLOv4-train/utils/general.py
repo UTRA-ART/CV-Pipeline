@@ -30,9 +30,8 @@ from utils.torch_utils import init_torch_seeds
 
 # Set printoptions
 torch.set_printoptions(linewidth=320, precision=5, profile="long")
-np.set_printoptions(
-    linewidth=320, formatter={"float_kind": "{:11.5g}".format}
-)  # format short g, %precision=5
+# format short g, %precision=5
+np.set_printoptions(linewidth=320, formatter={"float_kind": "{:11.5g}".format})
 matplotlib.rc("font", **{"size": 11})
 
 # Prevent OpenCV from multithreading (to use PyTorch DataLoader)
@@ -329,9 +328,8 @@ def bbox_iou(
 
     iou = inter / union
     if GIoU or DIoU or CIoU or EIoU or ECIoU:
-        cw = torch.max(b1_x2, b2_x2) - torch.min(
-            b1_x1, b2_x1
-        )  # convex (smallest enclosing box) width
+        # convex (smallest enclosing box) width
+        cw = torch.max(b1_x2, b2_x2) - torch.min(b1_x1, b2_x1)
         ch = torch.max(b1_y2, b2_y2) - torch.min(b1_y1, b2_y1)  # convex height
         if (
             CIoU or DIoU or EIoU or ECIoU
@@ -405,9 +403,8 @@ def box_iou(box1, box2):
         .clamp(0)
         .prod(2)
     )
-    return inter / (
-        area1[:, None] + area2 - inter
-    )  # iou = inter / (area1 + area2 - inter)
+    # iou = inter / (area1 + area2 - inter)
+    return inter / (area1[:, None] + area2 - inter)
 
 
 def wh_iou(wh1, wh2):
@@ -415,9 +412,8 @@ def wh_iou(wh1, wh2):
     wh1 = wh1[:, None]  # [N,1,2]
     wh2 = wh2[None]  # [1,M,2]
     inter = torch.min(wh1, wh2).prod(2)  # [N,M]
-    return inter / (
-        wh1.prod(2) + wh2.prod(2) - inter
-    )  # iou = inter / (area1 + area2 - inter)
+    # iou = inter / (area1 + area2 - inter)
+    return inter / (wh1.prod(2) + wh2.prod(2) - inter)
 
 
 def non_max_suppression(
@@ -432,7 +428,8 @@ def non_max_suppression(
     xc = prediction[..., 4] > conf_thres  # candidates
 
     # Settings
-    min_wh, max_wh = 2, 4096  # (pixels) minimum and maximum box width and height
+    # (pixels) minimum and maximum box width and height
+    min_wh, max_wh = 2, 4096
     max_det = 300  # maximum number of detections per image
     time_limit = 10.0  # seconds to quit after
     redundant = True  # require redundant detections
@@ -462,7 +459,7 @@ def non_max_suppression(
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
             x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
-
+        print(f"{classes=}")
         # Filter by class
         if classes:
             x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]
@@ -481,7 +478,8 @@ def non_max_suppression(
 
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
-        boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
+        # boxes (offset by class), scores
+        boxes, scores = x[:, :4] + c, x[:, 4]
         i = torch.ops.torchvision.nms(boxes, scores, iou_thres)
         if i.shape[0] > max_det:  # limit detections
             i = i[:max_det]
@@ -502,9 +500,8 @@ def non_max_suppression(
     return output
 
 
-def strip_optimizer(
-    f="weights/best.pt", s=""
-):  # from utils.general import *; strip_optimizer()
+# from utils.general import *; strip_optimizer()
+def strip_optimizer(f="weights/best.pt", s=""):
     # Strip optimizer from 'f' to finalize training, optionally save as 's'
     x = torch.load(f, map_location=torch.device("cpu"))
     x["optimizer"] = None
@@ -525,9 +522,8 @@ def print_mutation(hyp, results, yaml_file="hyp_evolved.yaml", bucket=""):
     # Print mutation results to evolve.txt (for use with train.py --evolve)
     a = "%10s" * len(hyp) % tuple(hyp.keys())  # hyperparam keys
     b = "%10.3g" * len(hyp) % tuple(hyp.values())  # hyperparam values
-    c = (
-        "%10.4g" * len(results) % results
-    )  # results (P, R, mAP@0.5, mAP@0.5:0.95, val_losses x 3)
+    # results (P, R, mAP@0.5, mAP@0.5:0.95, val_losses x 3)
+    c = "%10.4g" * len(results) % results
     print("\n%s\n%s\nEvolved fitness: %s\n" % (a, b, c))
 
     if bucket:
@@ -535,9 +531,8 @@ def print_mutation(hyp, results, yaml_file="hyp_evolved.yaml", bucket=""):
         if gsutil_getsize(url) > (
             os.path.getsize("evolve.txt") if os.path.exists("evolve.txt") else 0
         ):
-            os.system(
-                "gsutil cp %s ." % url
-            )  # download evolve.txt if larger than local
+            # download evolve.txt if larger than local
+            os.system("gsutil cp %s ." % url)
 
     with open("evolve.txt", "a") as f:  # append result
         f.write(c + b + "\n")
@@ -550,9 +545,8 @@ def print_mutation(hyp, results, yaml_file="hyp_evolved.yaml", bucket=""):
         hyp[k] = float(x[0, i + 7])
     with open(yaml_file, "w") as f:
         results = tuple(x[0, :7])
-        c = (
-            "%10.4g" * len(results) % results
-        )  # results (P, R, mAP@0.5, mAP@0.5:0.95, val_losses x 3)
+        # results (P, R, mAP@0.5, mAP@0.5:0.95, val_losses x 3)
+        c = "%10.4g" * len(results) % results
         f.write(
             "# Hyperparameter Evolution Results\n# Generations: %g\n# Metrics: "
             % len(x)
@@ -589,7 +583,8 @@ def apply_classifier(x, model, img, im0):
                 im = cv2.resize(cutout, (224, 224))  # BGR
                 # cv2.imwrite('test%i.jpg' % j, cutout)
 
-                im = im[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
+                # BGR to RGB, to 3x416x416
+                im = im[:, :, ::-1].transpose(2, 0, 1)
                 im = np.ascontiguousarray(im, dtype=np.float32)  # uint8 to float32
                 im /= 255.0  # 0 - 255 to 0.0 - 1.0
                 ims.append(im)
@@ -597,7 +592,8 @@ def apply_classifier(x, model, img, im0):
             pred_cls2 = model(torch.Tensor(ims).to(d.device)).argmax(
                 1
             )  # classifier prediction
-            x[i] = x[i][pred_cls1 == pred_cls2]  # retain matching class detections
+            # retain matching class detections
+            x[i] = x[i][pred_cls1 == pred_cls2]
 
     return x
 

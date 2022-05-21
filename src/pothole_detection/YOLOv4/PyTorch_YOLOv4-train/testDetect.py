@@ -1,6 +1,6 @@
 import os
 
-input_directory = "C:/Users/ammar/Documents/CodingProjects/ART/CV-Pipeline/YOLOv4/PyTorch_YOLOv4-train/inference/test2"
+input_directory = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\pothole_detection\\YOLOv4\\PyTorch_YOLOv4-train\\inference\\test3"
 
 command = 'python detect.py --weights "runs/train/exp125/weights/best.pt" --output "inference/output_test2/" --source '
 

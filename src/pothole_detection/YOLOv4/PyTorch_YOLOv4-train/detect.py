@@ -253,7 +253,10 @@ if __name__ == "__main__":
         "--cfg", type=str, default="./cfg/yolov4-tiny.cfg", help="*.cfg path"
     )
     parser.add_argument(
-        "--names", type=str, default="./data/potholes/names.names", help="*.cfg path"
+        "--names",
+        type=str,
+        default="./data/PotholesFinal/names.names",
+        help="*.cfg path",
     )
     opt = parser.parse_args()
     print(opt)
