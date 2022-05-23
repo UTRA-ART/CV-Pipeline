@@ -9,25 +9,6 @@ jobs:
   run-lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          # Full git history is needed to get a proper list of changed files within `super-linter`
-          fetch-depth: 0
-
-      # This workflow executes several linters on changed files based on languages used in your code base whenever
-      # you push a code or open a pull request.
-      #
-      # You can adjust the behavior by modifying this file.
-      # For more information, see:
-      # https://github.com/github/super-linter
-      - name: Lint Code Base
-        uses: github/super-linter@v4
-        env:
-          VALIDATE_ALL_CODEBASE: true
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       # From https://github.com/marketplace/actions/lint-action#python-example-flake8-and-black
       - name: Check out Git repository
         uses: actions/checkout@v2
@@ -38,10 +19,9 @@ jobs:
           python-version: 3.8
 
       - name: Install Python dependencies
-        run: pip install black flake8
+        run: pip install black
 
       - name: Run linters
         uses: wearerequired/lint-action@v2
         with:
           black: true
-          flake8: true
