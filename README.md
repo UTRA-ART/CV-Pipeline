@@ -15,7 +15,7 @@ Conform to the PEP8 style-guide [here](https://www.python.org/dev/peps/pep-0008/
 
 Please start thinking about wrapping your line when you get to around 80 characters.
 
-I personally like Black. The installation instructions can be found [here](https://github.com/psf/black#installation)
+Format using Black. The installation instructions can be found [here](https://github.com/psf/black#installation)
 
 Setup Instructions
 ------------------
