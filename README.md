@@ -1,3 +1,6 @@
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
+
 CV-Pipeline
 ===========
 Repository for the entire CV pipeline for Photon and Caffeine for the 2021-2022 competition season.
@@ -12,12 +15,6 @@ Style Guidelines
 Conform to the PEP8 style-guide [here](https://www.python.org/dev/peps/pep-0008/).
 
 Please start thinking about wrapping your line when you get to around 80 characters.
-
-### Linting
-* TODO: set up a repo-wide linter!
-
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
 
 Setup Instructions
 ------------------
