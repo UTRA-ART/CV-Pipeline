@@ -36,12 +36,14 @@ def fitness_ap(x):
 
 def fitness_f(x):
     # Model fitness as a weighted combination of metrics
-    #w = [0.0, 0.0, 0.0, 1.0]  # weights for [P, R, mAP@0.5, mAP@0.5:0.95]
-    return ((x[:, 0]*x[:, 1])/(x[:, 0]+x[:, 1]))
+    # w = [0.0, 0.0, 0.0, 1.0]  # weights for [P, R, mAP@0.5, mAP@0.5:0.95]
+    return (x[:, 0] * x[:, 1]) / (x[:, 0] + x[:, 1])
 
 
-def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, fname='precision-recall_curve.png'):
-    """ Compute the average precision, given the recall and precision curves.
+def ap_per_class(
+    tp, conf, pred_cls, target_cls, plot=False, fname="precision-recall_curve.png"
+):
+    """Compute the average precision, given the recall and precision curves.
     Source: https://github.com/rafaelpadilla/Object-Detection-Metrics.
     # Arguments
         tp:  True positives (nparray, nx1 or nx10).
@@ -64,7 +66,10 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, fname='precision-re
     # Create Precision-Recall curve and compute AP for each class
     px, py = np.linspace(0, 1, 1000), []  # for plotting
     pr_score = 0.1  # score to evaluate P and R https://github.com/ultralytics/yolov3/issues/898
-    s = [unique_classes.shape[0], tp.shape[1]]  # number class, number iou thresholds (i.e. 10 for mAP0.5...0.95)
+    s = [
+        unique_classes.shape[0],
+        tp.shape[1],
+    ]  # number class, number iou thresholds (i.e. 10 for mAP0.5...0.95)
     ap, p, r = np.zeros(s), np.zeros(s), np.zeros(s)
     for ci, c in enumerate(unique_classes):
         i = pred_cls == c
@@ -80,7 +85,9 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, fname='precision-re
 
             # Recall
             recall = tpc / (n_l + 1e-16)  # recall curve
-            r[ci] = np.interp(-pr_score, -conf[i], recall[:, 0])  # r at pr_score, negative x, xp because xp decreases
+            r[ci] = np.interp(
+                -pr_score, -conf[i], recall[:, 0]
+            )  # r at pr_score, negative x, xp because xp decreases
 
             # Precision
             precision = tpc / (tpc + fpc)  # precision curve
@@ -98,21 +105,27 @@ def ap_per_class(tp, conf, pred_cls, target_cls, plot=False, fname='precision-re
     if plot:
         py = np.stack(py, axis=1)
         fig, ax = plt.subplots(1, 1, figsize=(5, 5))
-        ax.plot(px, py, linewidth=0.5, color='grey')  # plot(recall, precision)
-        ax.plot(px, py.mean(1), linewidth=2, color='blue', label='all classes %.3f mAP@0.5' % ap[:, 0].mean())
-        ax.set_xlabel('Recall')
-        ax.set_ylabel('Precision')
+        ax.plot(px, py, linewidth=0.5, color="grey")  # plot(recall, precision)
+        ax.plot(
+            px,
+            py.mean(1),
+            linewidth=2,
+            color="blue",
+            label="all classes %.3f mAP@0.5" % ap[:, 0].mean(),
+        )
+        ax.set_xlabel("Recall")
+        ax.set_ylabel("Precision")
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         plt.legend()
         fig.tight_layout()
         fig.savefig(fname, dpi=200)
 
-    return p, r, ap, f1, unique_classes.astype('int32')
+    return p, r, ap, f1, unique_classes.astype("int32")
 
 
 def compute_ap(recall, precision):
-    """ Compute the average precision, given the recall and precision curves.
+    """Compute the average precision, given the recall and precision curves.
     Source: https://github.com/rbgirshick/py-faster-rcnn.
     # Arguments
         recall:    The recall curve (list).
@@ -129,8 +142,8 @@ def compute_ap(recall, precision):
     mpre = np.flip(np.maximum.accumulate(np.flip(mpre)))
 
     # Integrate area under curve
-    method = 'interp'  # methods: 'continuous', 'interp'
-    if method == 'interp':
+    method = "interp"  # methods: 'continuous', 'interp'
+    if method == "interp":
         x = np.linspace(0, 1, 101)  # 101-point interp (COCO)
         ap = np.trapz(np.interp(x, mrec, mpre), x)  # integrate
     else:  # 'continuous'

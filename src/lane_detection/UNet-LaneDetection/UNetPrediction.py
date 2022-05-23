@@ -15,61 +15,64 @@ video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 save_path = "/Users/jasonyuan/Desktop/Processed Frames"
 image_path = "/Users/jasonyuan/Desktop/Seattle Lane Driving Data"
 
+
 def find_edge_channel2(img):
 
-    gray_im = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    gray_im = cv2.GaussianBlur(gray_im,(5,5),0)
+    gray_im = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray_im = cv2.GaussianBlur(gray_im, (5, 5), 0)
 
     med = np.median(gray_im)
-    l = int(max(0,(1-0.205)*med))
-    u = int(min(255,(1+0.205)*med))
-    edges_mask = cv2.Canny(gray_im,l,u)
-
-    edges_mask_inv = cv2.bitwise_not(edges_mask)
-
-    return edges_mask,edges_mask_inv
-
-def find_edge_channel(img):
-    edges_mask = np.zeros((img.shape[0],img.shape[1]),dtype=np.uint8)
-    width = img.shape[1]
-    height = img.shape[0]
-
-    gray_im = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    # gray_im = cv2.GaussianBlur(gray_im,(3,3),0)
-    # Separate into quadrants
-    med1 = np.median(gray_im[:height//2,:width//2])
-    med2 = np.median(gray_im[:height//2,width//2:])
-    med3 = np.median(gray_im[height//2:,width//2:])
-    med4 = np.median(gray_im[height//2:,:width//2])
-
-    l1 = int(max(0,(1-0.205)*med1))
-    u1 = int(min(255,(1+0.205)*med1))
-    e1 = cv2.Canny(gray_im[:height//2,:width//2],l1,u1)
-
-    l2 = int(max(0,(1-0.205)*med2))
-    u2 = int(min(255,(1+0.205)*med2))
-    e2 = cv2.Canny(gray_im[:height//2,width//2:],l2,u2)
-
-    l3 = int(max(0,(1-0.205)*med3))
-    u3 = int(min(255,(1+0.205)*med3))
-    e3 = cv2.Canny(gray_im[height//2:,width//2:],l3,u3)
-
-    l4 = int(max(0,(1-0.205)*med4))
-    u4 = int(min(255,(1+0.205)*med4))
-    e4 = cv2.Canny(gray_im[height//2:,:width//2],l4,u4)
-
-    # Stitch the edges together
-    edges_mask[:height//2,:width//2] = e1
-    edges_mask[:height//2,width//2:] = e2
-    edges_mask[height//2:,width//2:] = e3
-    edges_mask[height//2:,:width//2] = e4
+    l = int(max(0, (1 - 0.205) * med))
+    u = int(min(255, (1 + 0.205) * med))
+    edges_mask = cv2.Canny(gray_im, l, u)
 
     edges_mask_inv = cv2.bitwise_not(edges_mask)
 
     return edges_mask, edges_mask_inv
 
-def predict_lanes(frame,unet):
-    frame = cv2.resize(frame,(1280,720),interpolation=cv2.INTER_AREA)
+
+def find_edge_channel(img):
+    edges_mask = np.zeros((img.shape[0], img.shape[1]), dtype=np.uint8)
+    width = img.shape[1]
+    height = img.shape[0]
+
+    gray_im = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # gray_im = cv2.GaussianBlur(gray_im,(3,3),0)
+    # Separate into quadrants
+    med1 = np.median(gray_im[: height // 2, : width // 2])
+    med2 = np.median(gray_im[: height // 2, width // 2 :])
+    med3 = np.median(gray_im[height // 2 :, width // 2 :])
+    med4 = np.median(gray_im[height // 2 :, : width // 2])
+
+    l1 = int(max(0, (1 - 0.205) * med1))
+    u1 = int(min(255, (1 + 0.205) * med1))
+    e1 = cv2.Canny(gray_im[: height // 2, : width // 2], l1, u1)
+
+    l2 = int(max(0, (1 - 0.205) * med2))
+    u2 = int(min(255, (1 + 0.205) * med2))
+    e2 = cv2.Canny(gray_im[: height // 2, width // 2 :], l2, u2)
+
+    l3 = int(max(0, (1 - 0.205) * med3))
+    u3 = int(min(255, (1 + 0.205) * med3))
+    e3 = cv2.Canny(gray_im[height // 2 :, width // 2 :], l3, u3)
+
+    l4 = int(max(0, (1 - 0.205) * med4))
+    u4 = int(min(255, (1 + 0.205) * med4))
+    e4 = cv2.Canny(gray_im[height // 2 :, : width // 2], l4, u4)
+
+    # Stitch the edges together
+    edges_mask[: height // 2, : width // 2] = e1
+    edges_mask[: height // 2, width // 2 :] = e2
+    edges_mask[height // 2 :, width // 2 :] = e3
+    edges_mask[height // 2 :, : width // 2] = e4
+
+    edges_mask_inv = cv2.bitwise_not(edges_mask)
+
+    return edges_mask, edges_mask_inv
+
+
+def predict_lanes(frame, unet):
+    frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
     # roi2,M2,M_inv2 = define_region_of_interest(frame)
     frame_copy = np.copy(frame)
     # roi,M,M_inv = define_region_of_interest(frame_copy)
@@ -79,12 +82,22 @@ def predict_lanes(frame,unet):
     # roi = roi/255.
     # input = torch.Tensor(roi)
 
-    test_edges,test_edges_inv = find_edge_channel(frame_copy)
-    frame_copy = np.append(frame_copy,test_edges.reshape(test_edges.shape[0],test_edges.shape[1],1),axis=2)
-    frame_copy = np.append(frame_copy,test_edges_inv.reshape(test_edges_inv.shape[0],test_edges_inv.shape[1],1),axis=2)
-    frame_copy = cv2.resize(frame_copy,(330,180))
+    test_edges, test_edges_inv = find_edge_channel(frame_copy)
+    frame_copy = np.append(
+        frame_copy,
+        test_edges.reshape(test_edges.shape[0], test_edges.shape[1], 1),
+        axis=2,
+    )
+    frame_copy = np.append(
+        frame_copy,
+        test_edges_inv.reshape(test_edges_inv.shape[0], test_edges_inv.shape[1], 1),
+        axis=2,
+    )
+    frame_copy = cv2.resize(frame_copy, (330, 180))
 
-    input = torch.Tensor((frame_copy/255.).transpose(2,0,1)).reshape(1,5,180,330)
+    input = torch.Tensor((frame_copy / 255.0).transpose(2, 0, 1)).reshape(
+        1, 5, 180, 330
+    )
     # x = (frame_copy/255.).transpose(2,0,1).reshape(1,5,180,330).astype(np.float32)
 
     # input = torch.Tensor((cv2.cvtColor(input_img_copy,cv2.COLOR_BGR2GRAY)/255.).reshape(1,1,180,330))
@@ -98,26 +111,27 @@ def predict_lanes(frame,unet):
 
     output = torch.sigmoid(output)
     output = output.detach().numpy()
-    pred_mask = np.where(output>0.5,1,0)
+    pred_mask = np.where(output > 0.5, 1, 0)
 
     # print(output)
     # print(ground_truth.shape)
     # print(pred_mask.size())
-    pred_mask = (pred_mask.squeeze(0)).transpose(1,2,0).squeeze().astype('float32')
+    pred_mask = (pred_mask.squeeze(0)).transpose(1, 2, 0).squeeze().astype("float32")
     # pred_mask = cv2.resize(pred_mask,(1280,720),interpolation=cv2.INTER_AREA)
 
-    overlayed_mask = np.copy(cv2.resize(frame,(330,180)))
+    overlayed_mask = np.copy(cv2.resize(frame, (330, 180)))
     # overlayed_mask = np.copy(input_img)
-    overlayed_mask[np.where(pred_mask==1)[0],np.where(pred_mask==1)[1],2] = 255
-    overlayed_mask[np.where(pred_mask==1)[0],np.where(pred_mask==1)[1],1] = 0
-    overlayed_mask[np.where(pred_mask==1)[0],np.where(pred_mask==1)[1],0] = 0
+    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 2] = 255
+    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 1] = 0
+    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 0] = 0
 
     # print(pred_mask.sum())
     # cv2.imshow("Input", frame)
     # cv2.imshow("Overlayed", overlayed_mask)
     # cv2.waitKey(0)
 
-    return overlayed_mask,pred_mask
+    return overlayed_mask, pred_mask
+
 
 def sortkey(x):
     if x == ".DS_Store":
@@ -125,23 +139,30 @@ def sortkey(x):
     else:
         return int(x.split(".")[0].split("Lane")[1])
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     # cap = cv2.VideoCapture(video_path)
     frame_rate = 1
     prev = 0
     n = 0
     unet = UNet()
-    unet.load_state_dict(torch.load("/Users/jasonyuan/Desktop/UNet Weights/unet_model_batch64_scheduled_lr0.05_epochs40_e14_best.pt",map_location=torch.device("cpu")))
+    unet.load_state_dict(
+        torch.load(
+            "/Users/jasonyuan/Desktop/UNet Weights/unet_model_batch64_scheduled_lr0.05_epochs40_e14_best.pt",
+            map_location=torch.device("cpu"),
+        )
+    )
 
+    frame = cv2.imread(
+        "/Users/jasonyuan/Desktop/UTRA:Projects/ART stuff/lane_dataset grass/image_rect_color_screenshot_09.12.2017 23.png"
+    )
+    annotated, pred = predict_lanes(frame, unet)
 
-    frame = cv2.imread("/Users/jasonyuan/Desktop/UTRA:Projects/ART stuff/lane_dataset grass/image_rect_color_screenshot_09.12.2017 23.png")
-    annotated, pred = predict_lanes(frame,unet)
+    cv2.imwrite("/Users/jasonyuan/Desktop/Test9.png", pred * 255)
 
-    cv2.imwrite("/Users/jasonyuan/Desktop/Test9.png",pred*255)
-
-    cv2.imshow("Annotated",annotated)
-    cv2.imshow("Og",frame)
-    cv2.imshow("Pred",pred)
+    cv2.imshow("Annotated", annotated)
+    cv2.imshow("Og", frame)
+    cv2.imshow("Pred", pred)
     cv2.waitKey(0)
 
     # out = cv2.VideoWriter('/Users/jasonyuan/Desktop/Processed_Lane_vid_2.mp4',cv2.VideoWriter_fourcc(*'mp4v'), 10, (640,360))
