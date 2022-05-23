@@ -5,6 +5,7 @@ import math
 import cv2
 import os
 
+
 def define_region_of_interest(image):
     height = image.shape[0]
     width = image.shape[1]
@@ -15,12 +16,25 @@ def define_region_of_interest(image):
     #                 (width//9,height)]],
     #                 dtype='float32')  # Extract a trapezoid like region (Top Left, Top Right, Bottom Right, Bottom Left)
 
-    src = np.array([[(width//10+math.floor(2*(height//5))/(math.tan(1/4*math.pi)),3*(height//5)),
-                    (9*(width//10)-math.floor(2*(height//5))/(math.tan(1/4*math.pi)),3*(height//5)),
-                    (width,height),
-                    (0,height)]],
-                    dtype='float32')
-
+    src = np.array(
+        [
+            [
+                (
+                    width // 10
+                    + math.floor(2 * (height // 5)) / (math.tan(1 / 4 * math.pi)),
+                    3 * (height // 5),
+                ),
+                (
+                    9 * (width // 10)
+                    - math.floor(2 * (height // 5)) / (math.tan(1 / 4 * math.pi)),
+                    3 * (height // 5),
+                ),
+                (width, height),
+                (0, height),
+            ]
+        ],
+        dtype="float32",
+    )
 
     # temp = cv2.polylines(image,np.int32(src),True,(255,0,0))
 
@@ -28,22 +42,31 @@ def define_region_of_interest(image):
     # plt.imshow(temp)
     # plt.show()
 
-    dst = np.array([[(0,0),
-                    (image.shape[1],0),
-                    (image.shape[1],image.shape[0]),
-                    (0,image.shape[0])]],
-                    dtype='float32')   # To be transformed to a rectangle
+    dst = np.array(
+        [
+            [
+                (0, 0),
+                (image.shape[1], 0),
+                (image.shape[1], image.shape[0]),
+                (0, image.shape[0]),
+            ]
+        ],
+        dtype="float32",
+    )  # To be transformed to a rectangle
     # dst = np.array([[(0,0),
     #                 (330,0),
     #                 (330,180),
     #                 (0,180)]],
     #                 dtype='float32')   # To be transformed to a rectangle
 
-    M = cv2.getPerspectiveTransform(src,dst)
-    M_inv = cv2.getPerspectiveTransform(dst,src)
-    warped_image = cv2.warpPerspective(image, M, (image.shape[1], image.shape[0]), flags=cv2.INTER_LINEAR)
+    M = cv2.getPerspectiveTransform(src, dst)
+    M_inv = cv2.getPerspectiveTransform(dst, src)
+    warped_image = cv2.warpPerspective(
+        image, M, (image.shape[1], image.shape[0]), flags=cv2.INTER_LINEAR
+    )
 
-    return warped_image,M,M_inv
+    return warped_image, M, M_inv
+
 
 if __name__ == "__main__":
     # img_path = "/Users/jasonyuan/Desktop/UTRA/ART stuff/lane_dataset grass/image_rect_color_screenshot_09.12.2017 2.png"
@@ -76,9 +99,11 @@ if __name__ == "__main__":
             continue
         name = filename.split(".")[0]
         num = name.split("_")[-1]
-        img = cv2.imread(dir2+"/"+"Lane_Label_"+num+".png",cv2.IMREAD_GRAYSCALE)
+        img = cv2.imread(
+            dir2 + "/" + "Lane_Label_" + num + ".png", cv2.IMREAD_GRAYSCALE
+        )
 
-        cv2.imwrite(os.path.join(save_dir_label,name+"_Label.png"),img)
+        cv2.imwrite(os.path.join(save_dir_label, name + "_Label.png"), img)
 
     # if not os.path.isdir(save_dir_input):
     #     os.makedirs(save_dir_input)

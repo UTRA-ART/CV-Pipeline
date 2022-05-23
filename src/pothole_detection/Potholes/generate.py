@@ -26,7 +26,7 @@ def is_valid(x, y, image):
     for i in range(x - RADIUS_X, x + RADIUS_X):
         for j in range(y - RADIUS_Y, y + RADIUS_Y):
             rgb += pixels[j][i]
-    mean = rgb/(4 * RADIUS_Y * RADIUS_X)
+    mean = rgb / (4 * RADIUS_Y * RADIUS_X)
 
     # Best rgb values that represent grey:
     if all((GREY_BOUNDS[0] <= num <= GREY_BOUNDS[1]) for num in mean):
@@ -34,6 +34,7 @@ def is_valid(x, y, image):
             return mean
 
     return None
+
 
 # Salt pepper noise
 
@@ -52,10 +53,14 @@ def add_noise(img):
 def add_patches(img, x_rad, y_rad, x1, y1):
     width, height = img.size
 
-    mns = [[x1 + random.randint(0, 2*x_rad), y1 + random.randint(0, 2*y_rad)],
-           [x1 + random.randint(0, 2*x_rad), y1 + random.randint(0, 2*y_rad)]]
-    sns = [min(x_rad, y_rad)*(random.randint(90, 110)/100.),
-           min(x_rad, y_rad)*(random.randint(90, 110)/100.)]
+    mns = [
+        [x1 + random.randint(0, 2 * x_rad), y1 + random.randint(0, 2 * y_rad)],
+        [x1 + random.randint(0, 2 * x_rad), y1 + random.randint(0, 2 * y_rad)],
+    ]
+    sns = [
+        min(x_rad, y_rad) * (random.randint(90, 110) / 100.0),
+        min(x_rad, y_rad) * (random.randint(90, 110) / 100.0),
+    ]
     # print(
     # f'radius1 is {sns[0]} and raius2 is {sns[1]} where xrad is {x_rad} and yrad is {y_rad}')
     k = 2
@@ -68,8 +73,9 @@ def add_patches(img, x_rad, y_rad, x1, y1):
 
             for b in range(k):
                 try:
-                    val = (sns[b] / ((math.sqrt((mns[b][0] - x) **
-                                                2 + (mns[b][1] - y)**2)) ** g))
+                    val = sns[b] / (
+                        (math.sqrt((mns[b][0] - x) ** 2 + (mns[b][1] - y) ** 2)) ** g
+                    )
                 except ZeroDivisionError:
                     val = r * 2
 
@@ -90,11 +96,11 @@ def draw_ellipse(input_path, max_potholes):
     for i in range(64):
         if count >= max_:
             break
-        loc_x = random.randint(0.2*1280, 0.8*1280)
-        loc_y = random.randint((int)(0.7*720), (int)(0.9*720))
+        loc_x = random.randint(0.2 * 1280, 0.8 * 1280)
+        loc_y = random.randint((int)(0.7 * 720), (int)(0.9 * 720))
         overlap = False
         for pothole in potholes:
-            if (abs(pothole[0] - loc_x) < 160 and abs(pothole[1] - loc_y) < 80):
+            if abs(pothole[0] - loc_x) < 160 and abs(pothole[1] - loc_y) < 80:
                 overlap = True
                 break
         if overlap:
@@ -103,8 +109,12 @@ def draw_ellipse(input_path, max_potholes):
         if mean is not None:
             mean = np.amax(mean)
             x_rad, y_rad = random.randint(50, RADIUS_X), random.randint(10, 40)
-            x_start, x_end, y_start, y_end = loc_x - x_rad, \
-                loc_x + x_rad, loc_y - y_rad, loc_y + y_rad
+            x_start, x_end, y_start, y_end = (
+                loc_x - x_rad,
+                loc_x + x_rad,
+                loc_y - y_rad,
+                loc_y + y_rad,
+            )
             # Mask a noisy image in the shape of a pothole
             rgb = min(int(130 + mean), 255)
             # Different type of potholes
@@ -112,20 +122,27 @@ def draw_ellipse(input_path, max_potholes):
             background = Image.new("L", image.size, rgb)
             obj_class = 0
             if select == 1:
-                background = add_patches(
-                    background, x_rad, y_rad, x_start, y_start)
+                background = add_patches(background, x_rad, y_rad, x_start, y_start)
             elif select > 3:
                 background = add_noise(background)
                 obj_class = 0
             background = background.filter(
-                ImageFilter.GaussianBlur(random.randint(50, 125)/100))
+                ImageFilter.GaussianBlur(random.randint(50, 125) / 100)
+            )
             # Scale down image to get a choppier ellipse
             scale = random.randint(30, 60) / 100
-            mask = Image.new("L", ((int)(image.width * scale),
-                             (int)(image.height * scale)), 0)
+            mask = Image.new(
+                "L", ((int)(image.width * scale), (int)(image.height * scale)), 0
+            )
             ImageDraw.Draw(mask).ellipse(
-                ((int)(x_start * scale), (int)(y_start * scale),
-                 (int)(x_end * scale), (int)(y_end * scale)), fill=255)
+                (
+                    (int)(x_start * scale),
+                    (int)(y_start * scale),
+                    (int)(x_end * scale),
+                    (int)(y_end * scale),
+                ),
+                fill=255,
+            )
             mask = mask.resize((image.width, image.height))
 
             mask = mask.filter(ImageFilter.GaussianBlur(random.randint(1, 4)))
@@ -137,21 +154,30 @@ def draw_ellipse(input_path, max_potholes):
     image.save(os.path.join(DATA_OUT, Path(input_path).name))
     height, width, rgb = np.array(image).shape
     # Normalize potholes locations
-    potholes = [[(float)(x[0])/width, (float)(x[1])/height,
-                 (float)(x[2])/width, (float)(x[3])/height, x[4]
-                 ] for x in potholes]
+    potholes = [
+        [
+            (float)(x[0]) / width,
+            (float)(x[1]) / height,
+            (float)(x[2]) / width,
+            (float)(x[3]) / height,
+            x[4],
+        ]
+        for x in potholes
+    ]
     # Save the label
-    filename = os.path.splitext(Path(input_path).name)[0] + '.txt'
-    file = open(os.path.join(LABEL_PATH, filename), 'w')
+    filename = os.path.splitext(Path(input_path).name)[0] + ".txt"
+    file = open(os.path.join(LABEL_PATH, filename), "w")
     for i in range(len(potholes)):
-        file.write(f"{potholes[i][4]} {potholes[i][0]} {potholes[i][1]}" +
-                   f" {potholes[i][2]} {potholes[i][3]}\n")
+        file.write(
+            f"{potholes[i][4]} {potholes[i][0]} {potholes[i][1]}"
+            + f" {potholes[i][2]} {potholes[i][3]}\n"
+        )
     file.close()
 
 
 for folder in os.listdir(DATA_PATH):
-    for file in os.listdir(DATA_PATH + f'/{folder}'):
-        draw_ellipse(DATA_PATH + f'{folder}/{file}', 4)
+    for file in os.listdir(DATA_PATH + f"/{folder}"):
+        draw_ellipse(DATA_PATH + f"{folder}/{file}", 4)
         print(f"Done: {file}")
 
     # # Add Gaussian Blur surrounding the pothole

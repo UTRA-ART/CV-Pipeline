@@ -12,6 +12,6 @@ if __name__ == "__main__":
         elif filename in os.listdir(dir_current):
             continue
         else:
-            img = cv2.imread(os.path.join(dir_old,filename))
-            img = cv2.resize(img,(1280,720),interpolation=cv2.INTER_AREA)
-            cv2.imwrite(os.path.join(dir_new,filename),img)
+            img = cv2.imread(os.path.join(dir_old, filename))
+            img = cv2.resize(img, (1280, 720), interpolation=cv2.INTER_AREA)
+            cv2.imwrite(os.path.join(dir_new, filename), img)
