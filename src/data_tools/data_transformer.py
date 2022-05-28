@@ -1012,7 +1012,7 @@ def lens_glare(image: np.ndarray, random_seed: int) -> np.ndarray:
 
     return apply_mask(
         image,
-        apply_gaussian(glare_mask(seed), kernel_x=10, kernel_y=10),
+        apply_gaussian(glare_mask(random_seed), kernel_x=10, kernel_y=10),
         np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8),
     )
 
