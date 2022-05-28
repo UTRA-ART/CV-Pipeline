@@ -21,20 +21,22 @@ WINDOW_NAME = "Output Frame"
 # image dimensions
 DEFAULT_HEIGHT = 720
 DEFAULT_WIDTH = 1280
-  
+
+
 def initialize_image(image_path: str) -> np.ndarray:
     """
-    Opens an image from specified file path. 
+    Opens an image from specified file path.
 
     INPUTS
     ------
     image_path: Path that indicates location of image
-    
+
     NOTES
     ----
     image[x,y] --> x is row, y is col.
     """
     return cv2.imread(image_path)
+
 
 def display_image(image: np.ndarray, display_window: str = WINDOW_NAME) -> None:
     """
@@ -45,8 +47,9 @@ def display_image(image: np.ndarray, display_window: str = WINDOW_NAME) -> None:
     image: Input image. Make sure it has dimensions of HEIGHT and WIDTH.
     display_window: Name of the output window.
     """
-    cv2.imshow(display_window, image) 
+    cv2.imshow(display_window, image)
     cv2.waitKey(0)
+
 
 def make_black(height: int = DEFAULT_HEIGHT, width: int = DEFAULT_WIDTH) -> np.ndarray:
     """
@@ -61,7 +64,16 @@ def make_black(height: int = DEFAULT_HEIGHT, width: int = DEFAULT_WIDTH) -> np.n
     """
     return np.zeros(shape=[height, width, 3], dtype=np.uint8)
 
-def resize_image(image: np.ndarray, hor_factor: float, ver_factor: float, centerized: int = 1, scaling_method: str = "factor", height: int = DEFAULT_HEIGHT, width: int = DEFAULT_WIDTH) -> np.ndarray:
+
+def resize_image(
+    image: np.ndarray,
+    hor_factor: float,
+    ver_factor: float,
+    centerized: int = 1,
+    scaling_method: str = "factor",
+    height: int = DEFAULT_HEIGHT,
+    width: int = DEFAULT_WIDTH,
+) -> np.ndarray:
     """
     Resizes an image and overlays it onto a black image.
 
@@ -82,7 +94,7 @@ def resize_image(image: np.ndarray, hor_factor: float, ver_factor: float, center
         any int
     width: width of the black image
         any int
-    
+
     NOTES
     -----
     Must be appied to labels as well.
@@ -109,10 +121,19 @@ def resize_image(image: np.ndarray, hor_factor: float, ver_factor: float, center
 
     return ret
 
-def crop_image(image: np.ndarray, top_row: int = 0, left_column: int = 0, drow: int = 0, dcol: int = 0, mode: str = "random", random_seed: int = 0) -> np.ndarray:
+
+def crop_image(
+    image: np.ndarray,
+    top_row: int = 0,
+    left_column: int = 0,
+    drow: int = 0,
+    dcol: int = 0,
+    mode: str = "random",
+    random_seed: int = 0,
+) -> np.ndarray:
     """
     Crops a portion of the image and resizes it to original image dimensions.
-    
+
     INPUTS
     ------
     image: Input image of dimensions WIDTH x HEIGHT.
@@ -130,7 +151,7 @@ def crop_image(image: np.ndarray, top_row: int = 0, left_column: int = 0, drow: 
         default is random
     random_seed: Allows you to repreduce results. If called with the same seed twice, the output will be the same.
         any integer
-    
+
     NOTES
     -----
     Must be applied to labels as well.
@@ -138,7 +159,7 @@ def crop_image(image: np.ndarray, top_row: int = 0, left_column: int = 0, drow: 
     row, col, channel = image.shape
     ret = make_black(height=row, width=col)
 
-    if (mode == "random"):
+    if mode == "random":
         random.seed(random_seed)
         top_row = random.randint(0, row - 1)
         left_column = random.randint(0, col - 1)
@@ -158,13 +179,14 @@ def crop_image(image: np.ndarray, top_row: int = 0, left_column: int = 0, drow: 
         drow = row - top_row - 1
     if left_column + dcol >= col:
         dcol = col - left_column - 1
-    
-    temp = image[top_row:(top_row + drow), left_column:(left_column + dcol)]
+
+    temp = image[top_row : (top_row + drow), left_column : (left_column + dcol)]
     resized = cv2.resize(temp, (col, row), interpolation=cv2.INTER_LINEAR)
     new_row, new_col, new_channel = resized.shape
     ret[:new_row, :new_col] = resized
 
     return ret
+
 
 def reflect_image(image: np.ndarray, axis: int) -> np.ndarray:
     """
@@ -183,8 +205,9 @@ def reflect_image(image: np.ndarray, axis: int) -> np.ndarray:
     Must be applied to labels as well.
     """
     ret = np.copy(image)
-    return cv2.flip(ret,axis)
- 
+    return cv2.flip(ret, axis)
+
+
 def rotate_image(image: np.ndarray, deg: float) -> np.ndarray:
     """
     Rotates image and resizes if necessary to preserve data from original image.
@@ -215,7 +238,13 @@ def rotate_image(image: np.ndarray, deg: float) -> np.ndarray:
     return cv2.warpAffine(ret, rotationMatrix, (int(cols), int(rows)))
 
 
-def shear_image(image: np.ndarray, sh_x: float, sh_y: float, height: int = DEFAULT_HEIGHT, width: int =DEFAULT_WIDTH) -> np.ndarray:
+def shear_image(
+    image: np.ndarray,
+    sh_x: float,
+    sh_y: float,
+    height: int = DEFAULT_HEIGHT,
+    width: int = DEFAULT_WIDTH,
+) -> np.ndarray:
     """
     Shears input image along x and y axes by specified amounts.
 
@@ -232,7 +261,7 @@ def shear_image(image: np.ndarray, sh_x: float, sh_y: float, height: int = DEFAU
         any int
     width: width of the black image
         any int
-    
+
     NOTES
     -----
     Must be applied to labels as well.
@@ -255,7 +284,10 @@ def shear_image(image: np.ndarray, sh_x: float, sh_y: float, height: int = DEFAU
 
     return sheared_img
 
-def apply_gaussian(image: np.ndarray, kernel_x: int =10, kernel_y: int =10) -> np.ndarray:
+
+def apply_gaussian(
+    image: np.ndarray, kernel_x: int = 10, kernel_y: int = 10
+) -> np.ndarray:
     """
     Applies a gaussian blur to the input image.
 
@@ -274,7 +306,13 @@ def apply_gaussian(image: np.ndarray, kernel_x: int =10, kernel_y: int =10) -> n
     return cv2.GaussianBlur(ret, (2 * kernel_x + 1, 2 * kernel_y + 1), 0)
 
 
-def colour(image: np.ndarray, blue_factor: float = 1, green_factor: float = 1, red_factor: float = 1, mode: str = "BGR") -> np.ndarray:
+def colour(
+    image: np.ndarray,
+    blue_factor: float = 1,
+    green_factor: float = 1,
+    red_factor: float = 1,
+    mode: str = "BGR",
+) -> np.ndarray:
     """
     Modifies colour channels of input image.
 
@@ -286,7 +324,7 @@ def colour(image: np.ndarray, blue_factor: float = 1, green_factor: float = 1, r
         if bf increases the blue beyond 255, it gets capped at 255
     green_factor: green-factor to be multiplied to the green channel of the image.
         gf = 0 will remove all green from the image
-        if gf increases the green beyond 255, it gets capped at 255  
+        if gf increases the green beyond 255, it gets capped at 255
     red_factor: red-factor to be multiplied to the red channel of the image.
         rf = 0 will remove all red from the image
         if rf increases the red beyond 255, it gets capped at 255
@@ -302,26 +340,27 @@ def colour(image: np.ndarray, blue_factor: float = 1, green_factor: float = 1, r
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     ret = np.copy(image)
-    if (blue_factor <= 1):
-        ret[:,:,0] = (ret[:,:,0]*blue_factor).astype(int)
+    if blue_factor <= 1:
+        ret[:, :, 0] = (ret[:, :, 0] * blue_factor).astype(int)
     else:
         blue = np.copy(image)
-        blue[:,:,0] = 255
-        ret[:,:,0] = ((ret[:,:,0] + 2*blue[:,:,0])/3).astype(int)
-    if (green_factor <= 1):
-        ret[:,:,1] = (ret[:,:,1]*green_factor).astype(int)
-    else: 
+        blue[:, :, 0] = 255
+        ret[:, :, 0] = ((ret[:, :, 0] + 2 * blue[:, :, 0]) / 3).astype(int)
+    if green_factor <= 1:
+        ret[:, :, 1] = (ret[:, :, 1] * green_factor).astype(int)
+    else:
         green = np.copy(image)
-        green[:,:,1] = 255
-        ret[:,:,1] = ((ret[:,:,1] + 2*green[:,:,1])/3).astype(int)
-    if (red_factor <= 1):
-        ret[:,:,2] = (ret[:,:,2]*red_factor).astype(int)
+        green[:, :, 1] = 255
+        ret[:, :, 1] = ((ret[:, :, 1] + 2 * green[:, :, 1]) / 3).astype(int)
+    if red_factor <= 1:
+        ret[:, :, 2] = (ret[:, :, 2] * red_factor).astype(int)
     else:
         red = np.copy(image)
         red[:, :, 2] = 255
         ret[:, :, 2] = ((ret[:, :, 2] + 2 * red[:, :, 2]) / 3).astype(int)
 
     return ret
+
 
 def pixel_swap(image: np.ndarray, random_seed: int, swap_density: float) -> np.ndarray:
     """
@@ -334,7 +373,7 @@ def pixel_swap(image: np.ndarray, random_seed: int, swap_density: float) -> np.n
         any integer
     swap_density: determines the number of times pixels are swapped. Implemented as the percetnage of pixels modified.
         any float between 0 and 1
-    
+
     NOTES
     -----
     WARNING VERY SLOW
@@ -344,7 +383,7 @@ def pixel_swap(image: np.ndarray, random_seed: int, swap_density: float) -> np.n
     ret = np.copy(image)
     random.seed(random_seed)
 
-    swaps = int(height*width*swap_density)
+    swaps = int(height * width * swap_density)
 
     for num in range(swaps):
         a = random.randint(0, height - 1)
@@ -358,7 +397,10 @@ def pixel_swap(image: np.ndarray, random_seed: int, swap_density: float) -> np.n
 
     return ret
 
-def apply_mosaic(image: np.ndarray, random_seed: int, number_of_swaps: int) -> np.ndarray:
+
+def apply_mosaic(
+    image: np.ndarray, random_seed: int, number_of_swaps: int
+) -> np.ndarray:
     """
     Randomly swaps sections of an image. Sections are rectangles of random dimensions
 
@@ -381,8 +423,8 @@ def apply_mosaic(image: np.ndarray, random_seed: int, number_of_swaps: int) -> n
     height, width, channel = image.shape
 
     for k in range(number_of_swaps):
-        box_height = random.randint(50,200)
-        box_width = random.randint(50,200)
+        box_height = random.randint(50, 200)
+        box_width = random.randint(50, 200)
         a = random.randint(0, DEFAULT_HEIGHT - box_height - 1)
         b = random.randint(0, DEFAULT_WIDTH - box_width - 1)
         c = random.randint(0, DEFAULT_HEIGHT - box_height - 1)
@@ -400,7 +442,10 @@ def apply_mosaic(image: np.ndarray, random_seed: int, number_of_swaps: int) -> n
 
     return ret
 
-def uniform_mosaic(image: np.ndarray, random_seed: int, v_box: int, h_box: int) -> np.ndarray:
+
+def uniform_mosaic(
+    image: np.ndarray, random_seed: int, v_box: int, h_box: int
+) -> np.ndarray:
     """
     Splits image into a grid of x_box by y_box equal rectangles. Randomly swaps rectangles.
 
@@ -418,7 +463,9 @@ def uniform_mosaic(image: np.ndarray, random_seed: int, v_box: int, h_box: int) 
     -----
     Must be applied to labels as well.
     """
-    arr = np.arange(1, v_box * h_box + 1, dtype=int) # middle index is not swapped if odd
+    arr = np.arange(
+        1, v_box * h_box + 1, dtype=int
+    )  # middle index is not swapped if odd
     np.random.seed(random_seed)
     np.random.shuffle(arr)
 
@@ -446,7 +493,10 @@ def uniform_mosaic(image: np.ndarray, random_seed: int, v_box: int, h_box: int) 
 
     return ret
 
-def apply_saltpepper(image: np.ndarray, random_seed: int, density: int = 10) -> np.ndarray:
+
+def apply_saltpepper(
+    image: np.ndarray, random_seed: int, density: int = 10
+) -> np.ndarray:
     """
     Randomly turns pixels white, black, or gray to add noise.
 
@@ -461,16 +511,25 @@ def apply_saltpepper(image: np.ndarray, random_seed: int, density: int = 10) -> 
     ret = np.copy(image)
 
     np.random.seed(random_seed)
-    arr = np.random.randint(0,density, size=(720, 1280, 1)) # pixels that we want to change, indicated by 1
+    arr = np.random.randint(
+        0, density, size=(720, 1280, 1)
+    )  # pixels that we want to change, indicated by 1
     ret = np.where(arr == 0, 0, ret)
     ret = np.where(arr == 1, 255, ret)
-    random.seed(random_seed+100)
+    random.seed(random_seed + 100)
     val = random.randint(1, 255)
     ret = np.where(arr == 2, val, ret)
 
     return ret
 
-def apply_wave(image: np.ndarray, amplitude:float =100, shift: float =0, stretch:float =0.02, axis: int =1) -> np.ndarray:
+
+def apply_wave(
+    image: np.ndarray,
+    amplitude: float = 100,
+    shift: float = 0,
+    stretch: float = 0.02,
+    axis: int = 1,
+) -> np.ndarray:
     """
     Creates a wave-like effect on image, based on a sinusoidal curve.
 
@@ -549,6 +608,7 @@ def apply_mask(
 
     return (((255 - mask) * background + mask * image) / 255).astype(np.uint8)
 
+
 def generate_mask_round(random_seed: int, num_shapes: int) -> np.ndarray:
     """
     Generates a mask. Draws specified number of round shapes that may overlap.
@@ -580,7 +640,14 @@ def generate_mask_round(random_seed: int, num_shapes: int) -> np.ndarray:
 
     return ret
 
-def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: int =1, shadow3_freq: int =1, shadow4_freq: int =1) -> np.ndarray:
+
+def generate_mask_object(
+    random_seed: int,
+    shadow1_freq: int = 1,
+    shadow2_freq: int = 1,
+    shadow3_freq: int = 1,
+    shadow4_freq: int = 1,
+) -> np.ndarray:
     """
     Generates a mask. Takes four given black and white images and randomly places them and applies shearing.
 
@@ -610,7 +677,7 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
     shadow2 = initialize_image(SHADOW_2_PATH)
     h2, w2, c2 = shadow2.shape
     shadow3 = initialize_image(SHADOW_3_PATH)
-    h3, w3, c3 = shadow3.shape 
+    h3, w3, c3 = shadow3.shape
     s4 = initialize_image(SHADOW_4_PATH)
     old_h4, old_w4, old_c4 = s4.shape
     shadow4 = cv2.resize(
@@ -626,12 +693,24 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
     )  # matrix of 1s, will allow overlapping shadows to be darker
 
     random.seed(random_seed)
-    sh_x = random.randint(0, int((min(w1/h1, w2/h2, w3/h3, w4/h4)*100 - 3)/3))/100
-    sh_y = random.randint(0, int((min(h1/w1, h2/w2, h3/w3, h4/w4)*100 - 3)/3))/100
-    flip = random.randint(0,1)
- 
+    sh_x = (
+        random.randint(0, int((min(w1 / h1, w2 / h2, w3 / h3, w4 / h4) * 100 - 3) / 3))
+        / 100
+    )
+    sh_y = (
+        random.randint(0, int((min(h1 / w1, h2 / w2, h3 / w3, h4 / w4) * 100 - 3) / 3))
+        / 100
+    )
+    flip = random.randint(0, 1)
+
     for k in range(shadow1_freq):
-        shs1 = shear_image(np.full((h1, w1, 3), 255, dtype=np.uint8) - shadow1, sh_x, sh_y, height=h1, width=w1)
+        shs1 = shear_image(
+            np.full((h1, w1, 3), 255, dtype=np.uint8) - shadow1,
+            sh_x,
+            sh_y,
+            height=h1,
+            width=w1,
+        )
         gss1 = apply_gaussian(shs1, kernel_x=50, kernel_y=50)
         if flip == 0:
             gss1 = reflect_image(gss1, 1)
@@ -647,7 +726,13 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
         ).astype(int)
 
     for k in range(shadow2_freq):
-        shs2 = shear_image(np.full((h2, w2, 3), 255, dtype=np.uint8) - shadow2, sh_x, sh_y, height=h2, width=w2)
+        shs2 = shear_image(
+            np.full((h2, w2, 3), 255, dtype=np.uint8) - shadow2,
+            sh_x,
+            sh_y,
+            height=h2,
+            width=w2,
+        )
         gss2 = apply_gaussian(shs2, kernel_x=50, kernel_y=50)
         if flip == 0:
             gss2 = reflect_image(gss2, 1)
@@ -663,7 +748,13 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
         ).astype(int)
 
     for k in range(shadow3_freq):
-        shs3 = shear_image(np.full((h3, w3, 3), 255, dtype=np.uint8) - shadow3, sh_x, sh_y, height=h3, width=w3)
+        shs3 = shear_image(
+            np.full((h3, w3, 3), 255, dtype=np.uint8) - shadow3,
+            sh_x,
+            sh_y,
+            height=h3,
+            width=w3,
+        )
         gss3 = apply_gaussian(shs3, kernel_x=50, kernel_y=50)
         if flip == 0:
             gss3 = reflect_image(gss3, 1)
@@ -679,7 +770,13 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
         ).astype(int)
 
     for k in range(shadow4_freq):
-        shs4 = shear_image(np.full((h4, w4, 3), 255, dtype=np.uint8) - shadow4, sh_x, sh_y, height=h4, width=w4)
+        shs4 = shear_image(
+            np.full((h4, w4, 3), 255, dtype=np.uint8) - shadow4,
+            sh_x,
+            sh_y,
+            height=h4,
+            width=w4,
+        )
         gss4 = apply_gaussian(shs4, kernel_x=50, kernel_y=50)
         if flip == 0:
             gss4 = reflect_image(gss4, 1)
@@ -696,7 +793,10 @@ def generate_mask_object(random_seed: int, shadow1_freq: int =1, shadow2_freq: i
 
     return np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8) - temp
 
-def shadow_round(image: np.ndarray, num_of_shadows: int, random_seed: int, darken: float =0.4) -> np.ndarray:   
+
+def shadow_round(
+    image: np.ndarray, num_of_shadows: int, random_seed: int, darken: float = 0.4
+) -> np.ndarray:
     """
     Applies a shadow with generate_mask_round.
 
@@ -715,11 +815,24 @@ def shadow_round(image: np.ndarray, num_of_shadows: int, random_seed: int, darke
     -----
     Does not affect labels.
     """
-    ret = apply_mask(image, apply_gaussian(generate_mask_round(random_seed, num_of_shadows)), colour(image, blue_factor = darken, green_factor = darken, red_factor = darken))
+    ret = apply_mask(
+        image,
+        apply_gaussian(generate_mask_round(random_seed, num_of_shadows)),
+        colour(image, blue_factor=darken, green_factor=darken, red_factor=darken),
+    )
 
     return ret
 
-def shadow_object(image: np.ndarray, random_seed: int, darken: int=0.4, shadow1_freq: int =1, shadow2_freq: int =1, shadow3_freq: int =1, shadow4_freq: int =1) -> np.ndarray:   
+
+def shadow_object(
+    image: np.ndarray,
+    random_seed: int,
+    darken: int = 0.4,
+    shadow1_freq: int = 1,
+    shadow2_freq: int = 1,
+    shadow3_freq: int = 1,
+    shadow4_freq: int = 1,
+) -> np.ndarray:
     """
     Applies a shadow with generate_mask_round.
 
@@ -747,12 +860,29 @@ def shadow_object(image: np.ndarray, random_seed: int, darken: int=0.4, shadow1_
     NOTES
     -----
     Does not affect labels.
-    """ 
-    ret = apply_mask(image, generate_mask_object(random_seed, shadow1_freq=shadow1_freq, shadow2_freq=shadow2_freq, shadow3_freq=shadow3_freq, shadow4_freq=shadow4_freq), colour(image, blue_factor = darken, green_factor = darken, red_factor = darken))
+    """
+    ret = apply_mask(
+        image,
+        generate_mask_object(
+            random_seed,
+            shadow1_freq=shadow1_freq,
+            shadow2_freq=shadow2_freq,
+            shadow3_freq=shadow3_freq,
+            shadow4_freq=shadow4_freq,
+        ),
+        colour(image, blue_factor=darken, green_factor=darken, red_factor=darken),
+    )
 
     return ret
 
-def raindrop(image: np.ndarray, random_seed: int, num_of_raindrops: int =40, kernel_x: int=50, kernel_y: int=200) -> np.ndarray:
+
+def raindrop(
+    image: np.ndarray,
+    random_seed: int,
+    num_of_raindrops: int = 40,
+    kernel_x: int = 50,
+    kernel_y: int = 200,
+) -> np.ndarray:
     """
     Blurs round regions on an image to simulate the effect of raindrops on a lens.
 
@@ -771,7 +901,12 @@ def raindrop(image: np.ndarray, random_seed: int, num_of_raindrops: int =40, ker
     -----
     Does not affect labels.
     """
-    return apply_mask(image, apply_gaussian(generate_mask_round(random_seed, num_of_raindrops)), apply_gaussian(image, kernel_x = kernel_x, kernel_y = kernel_y))
+    return apply_mask(
+        image,
+        apply_gaussian(generate_mask_round(random_seed, num_of_raindrops)),
+        apply_gaussian(image, kernel_x=kernel_x, kernel_y=kernel_y),
+    )
+
 
 def glare_mask(random_seed: int) -> np.ndarray:
     """
@@ -859,6 +994,7 @@ def glare_mask(random_seed: int) -> np.ndarray:
 
     return ret
 
+
 def lens_glare(image: np.ndarray, random_seed: int) -> np.ndarray:
     """
     Brightens a region to simulate the effect of glare on a camera lens
@@ -879,6 +1015,7 @@ def lens_glare(image: np.ndarray, random_seed: int) -> np.ndarray:
         apply_gaussian(glare_mask(seed), kernel_x=10, kernel_y=10),
         np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8),
     )
+
 
 def main() -> None:
     image = initialize_image(DEFAULT_IMAGE_PATH)
@@ -975,13 +1112,15 @@ def main() -> None:
     shdr = shadow_round(image, 10, 1)
     display_image(shdr)
 
-    rain1 = raindrop(image, 1, num_of_raindrops=20, kernel_x = 300)
+    rain1 = raindrop(image, 1, num_of_raindrops=20, kernel_x=300)
     display_image(rain1)
 
     rain2 = raindrop(image, 10)
     display_image(rain2)
 
-    shdo1 = shadow_object(image, 40, shadow1_freq = 2, shadow2_freq = 1, shadow3_freq = 0, shadow4_freq = 0)
+    shdo1 = shadow_object(
+        image, 40, shadow1_freq=2, shadow2_freq=1, shadow3_freq=0, shadow4_freq=0
+    )
     display_image(shdo1)
 
     shdo2 = shadow_object(image, 2)
@@ -991,6 +1130,7 @@ def main() -> None:
     display_image(glare)
 
     cv2.destroyAllWindows()
+
 
 if __name__ == "__main__":
     main()
