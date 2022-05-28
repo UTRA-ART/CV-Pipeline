@@ -1,7 +1,6 @@
 import math
 import os
 import random
-from tkinter import N
 
 import cv2
 from cv2 import getRotationMatrix2D
