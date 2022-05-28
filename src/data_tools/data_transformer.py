@@ -1,26 +1,25 @@
-import re
-from cv2 import getRotationMatrix2D, spatialGradient, warpAffine
-import numpy as np
-import cv2
 import math
-from PIL import Image
+import os
 import random
-from scipy.ndimage.interpolation import map_coordinates
-from scipy.ndimage.filters import gaussian_filter
 
-# path 
-path = "Put the path of your image here"
-path1 = "Put the path of shadow.png here"
-path2 = "put the path of shadow2.jpeg here"
-path3 = "put the path of cone.jpeg here"
-path4 = "put the path of barrel.png here"
+import cv2
+from cv2 import getRotationMatrix2D
+import numpy as np
+
+# path, make sure images are in the same folder as 
+FILE_DIRECTORY = os.path.dirname(__file__)
+DEFAULT_IMAGE_PATH = os.path.join(FILE_DIRECTORY, "newdim.jpg")
+SHADOW_1_PATH = os.path.join(FILE_DIRECTORY, "shadow.png")
+SHADOW_2_PATH = os.path.join(FILE_DIRECTORY, "shadow2.jpeg")
+SHADOW_3_PATH = os.path.join(FILE_DIRECTORY, "cone.jpeg")
+SHADOW_4_PATH = os.path.join(FILE_DIRECTORY, "barrel.png")
 
 # output window name
 WINDOW_NAME = "Output Frame"
 
 # image dimensions
-HEIGHT = 720
-WIDTH = 1280
+DEFAULT_HEIGHT = 720
+DEFAULT_WIDTH = 1280
   
 def initialize(path):
     '''
@@ -44,13 +43,13 @@ def display_image(image, window=WINDOW_NAME):
     cv2.imshow(window, image) 
     cv2.waitKey(0)
 
-def make_black(height=HEIGHT, width=WIDTH):
+def make_black(height=DEFAULT_HEIGHT, width=DEFAULT_WIDTH):
     '''
     Creates a black image of dimensions WIDTH x HEIGHT.
     '''
     return np.zeros(shape=[height, width, 3], dtype=np.uint8)
 
-def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="factor", height=HEIGHT, width=WIDTH):
+def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="factor", height=DEFAULT_HEIGHT, width=DEFAULT_WIDTH):
     '''
     Resizes an image and overlays it onto a black image.
 
@@ -91,6 +90,62 @@ def resize_image(image, hor_factor, ver_factor, centerized=1, scaling_method="fa
 
     return ret
 
+def crop_image(image, top_row, left_column, drow, dcol, mode="random", seed=0):
+    '''
+    Reflects input image along given axis.
+    
+    INPUTS
+    ------
+    image: Input image of dimensions WIDTH x HEIGHT.
+    axis: determines which axis the image is flipped along. 
+        0: flip over x-axis
+        1: flip over y-axis
+        -1: flip over both axes
+    
+    NOTES
+    -----
+    Must be applied to labels as well.
+    '''
+    row, col, channel = image.shape
+    ret = make_black(height=row, width=col)
+
+    if (mode == "random"):
+        random.seed(seed)
+        top_row = random.randint(0, row - 1)
+        left_column = random.randint(0, col - 1)
+        drow = random.randint(0, row - 1)
+        dcol = random.randint(0, col - 1)
+
+    if (top_row < 0):
+        top_row = 0
+    elif (top_row >= row):
+        top_row = row - 1
+    if (left_column < 0):
+        left_column = 0
+    elif(left_column >= col):
+        left_column = col - 1
+
+    if (top_row + drow >= row):
+        drow = row - top_row - 1
+    if (left_column + dcol >= col):
+        dcol = col - left_column - 1
+    
+    
+    temp = image[top_row:(top_row + drow), left_column:(left_column + dcol)]
+
+    if (drow/row < dcol/col): # we can only scale col to max
+        new_dim = (col, int(drow * col / dcol))
+    else:
+        new_dim = (int(dcol * row / drow), row)
+
+    resized = cv2.resize(temp, new_dim, interpolation=cv2.INTER_LINEAR)
+
+    new_row, new_col, new_channel = resized.shape
+
+    ret[:new_row, :new_col] = resized
+
+    return ret
+
 def reflect_image(image, axis):
     '''
     Reflects input image along given axis.
@@ -128,17 +183,17 @@ def rotate_image(image, deg):
     if (val > 90):
         val = 180 - val
 
-    hypo = math.sqrt(math.pow(HEIGHT/2, 2) + math.pow(WIDTH/2, 2))
-    init_angle = math.atan(HEIGHT/WIDTH)
-    factor = HEIGHT/(2*hypo*math.sin(init_angle + math.radians(val)))
+    hypo = math.sqrt(math.pow(DEFAULT_HEIGHT/2, 2) + math.pow(DEFAULT_WIDTH/2, 2))
+    init_angle = math.atan(DEFAULT_HEIGHT/DEFAULT_WIDTH)
+    factor = DEFAULT_HEIGHT/(2*hypo*math.sin(init_angle + math.radians(val)))
     image = resize_image(image, factor, factor)
     
     rows, cols, dim = image.shape
-    M = getRotationMatrix2D(center = (round(cols/2), round(rows/2)), angle=deg, scale=1)
+    rotationMatrix = getRotationMatrix2D(center = (round(cols/2), round(rows/2)), angle=deg, scale=1)
     ret = np.copy(image)
-    return cv2.warpAffine(ret, M, (int(cols),int(rows)))
+    return cv2.warpAffine(ret, rotationMatrix, (int(cols),int(rows)))
 
-def shear_image(image, sh_x, sh_y, height=HEIGHT, width=WIDTH):
+def shear_image(image, sh_x, sh_y, height=DEFAULT_HEIGHT, width=DEFAULT_WIDTH):
     '''
     Shears input image along x and y axes by specified amounts.
 
@@ -186,7 +241,7 @@ def apply_gaussian(image, kernel_x=10, kernel_y=10):
     ret = np.copy(image)
     return cv2.GaussianBlur(ret, (2*kernel_x + 1, 2*kernel_y + 1), 0)
 
-def colour(image, bf=1, gf=1, rf=1, mode="RGB"):
+def colour(image, bf=1, gf=1, rf=1, mode="BGR"):
     '''
     Modifies colour channels of input image.
 
@@ -202,8 +257,8 @@ def colour(image, bf=1, gf=1, rf=1, mode="RGB"):
     rf: red-factor to be multiplied to the red channel of the image.
         rf = 0 will remove all red from the image
         if rf increases the red beyond 255, it gets capped at 255  
-    mode: indicates if you want to modify the RGB channels of your image.
-        default modifies RGB channels
+    mode: indicates if you want to modify the BGR channels of your image.
+        default modifies BGR channels
         otherwise, applies grayscale to the image
 
     NOTES
@@ -211,30 +266,30 @@ def colour(image, bf=1, gf=1, rf=1, mode="RGB"):
     Does not affect labels.
 
     '''
-    if (mode != "RGB"):
+    if (mode != "BGR"):
         return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    ret = np.copy(image)
+    if (bf <= 1):
+        ret[:,:,0] = (ret[:,:,0]*bf).astype(int)
     else:
-        ret = np.copy(image)
-        if (bf <= 1):
-            ret[:,:,0] = (ret[:,:,0]*bf).astype(int)
-        else:
-            blue = np.copy(image)
-            blue[:,:,0] = 255
-            ret[:,:,0] = ((ret[:,:,0] + 2*blue[:,:,0])/3).astype(int)
-        if (gf <= 1):
-            ret[:,:,1] = (ret[:,:,1]*gf).astype(int)
-        else: 
-            green = np.copy(image)
-            green[:,:,1] = 255
-            ret[:,:,1] = ((ret[:,:,1] + 2*green[:,:,1])/3).astype(int)
-        if (rf <= 1):
-            ret[:,:,2] = (ret[:,:,2]*rf).astype(int)
-        else:
-            red = np.copy(image)
-            red[:,:,2] = 255
-            ret[:,:,2] = ((ret[:,:,2] + 2*red[:,:,2])/3).astype(int)
+        blue = np.copy(image)
+        blue[:,:,0] = 255
+        ret[:,:,0] = ((ret[:,:,0] + 2*blue[:,:,0])/3).astype(int)
+    if (gf <= 1):
+        ret[:,:,1] = (ret[:,:,1]*gf).astype(int)
+    else: 
+        green = np.copy(image)
+        green[:,:,1] = 255
+        ret[:,:,1] = ((ret[:,:,1] + 2*green[:,:,1])/3).astype(int)
+    if (rf <= 1):
+        ret[:,:,2] = (ret[:,:,2]*rf).astype(int)
+    else:
+        red = np.copy(image)
+        red[:,:,2] = 255
+        ret[:,:,2] = ((ret[:,:,2] + 2*red[:,:,2])/3).astype(int)
         
-        return ret
+    return ret
 
 def pixel_swap(image, seed, swaps):
     '''
@@ -255,14 +310,12 @@ def pixel_swap(image, seed, swaps):
     '''
     height, width, channels = image.shape
     ret = np.copy(image)
-    for num in range(0, swaps):
-        random.seed(seed + num)
+    random.seed(seed)
+
+    for num in range(swaps):
         a = random.randint(0, height - 1)
-        random.seed(seed + num + swaps)
         b = random.randint(0, width - 1)
-        random.seed(seed + num + 2*swaps)
         c = random.randint(0, height - 1)
-        random.seed(seed + num + 3*swaps)
         d = random.randint(0, width - 1)
         
         x, y, z = ret[a,b]
@@ -289,21 +342,15 @@ def apply_mosaic(image, seed, swaps):
     '''
     ret = np.copy(image)
     cpy = np.copy(image)
+    random.seed(seed)
 
     for k in range(swaps):
-        random.seed(seed*k)
         box_height = random.randint(50,200)
-        random.seed(seed*k + 50)
         box_width = random.randint(50,200)
-        random.seed(seed*k + 100)
-        a = random.randint(0, HEIGHT - box_height - 1)
-        random.seed(seed*k + 200)
-        b = random.randint(0, WIDTH - box_width - 1)
-        random.seed(seed*k + 300)
-        c = random.randint(0, HEIGHT - box_height - 1)
-        random.seed(seed*k + 200)
-        d = random.randint(0, WIDTH - box_width - 1)
-        random.seed(seed*k + 300)
+        a = random.randint(0, DEFAULT_HEIGHT - box_height - 1)
+        b = random.randint(0, DEFAULT_WIDTH - box_width - 1)
+        c = random.randint(0, DEFAULT_HEIGHT - box_height - 1)
+        d = random.randint(0, DEFAULT_WIDTH - box_width - 1)
         
         cpy[a:(a + box_height), b:(b + box_width)] = ret[a:(a + box_height), b:(b + box_width)]
         ret[a:(a + box_height), b:(b + box_width)] = ret[c:(c + box_height), d:(d + box_width)]
@@ -333,8 +380,8 @@ def uniform_mosaic(image, seed, v_box, h_box):
     np.random.seed(seed)
     np.random.shuffle(arr)
 
-    rows = int(HEIGHT/v_box)
-    cols = int(WIDTH/h_box)
+    rows = int(DEFAULT_HEIGHT/v_box)
+    cols = int(DEFAULT_WIDTH/h_box)
 
     ret = np.copy(image)
     cpy = np.copy(image)
@@ -402,21 +449,21 @@ def apply_wave(image, amplitude=100, shift=0, stretch=0.02, axis=1):
     '''
     ret = make_black()
     if (axis is 0):
-        factor = (WIDTH - 2*amplitude)/WIDTH
+        factor = (DEFAULT_WIDTH - 2*amplitude)/DEFAULT_WIDTH
         rsz = resize_image(image, factor, factor)
 
-        for i in range(0, HEIGHT):
+        for i in range(DEFAULT_HEIGHT):
             num = round(amplitude*math.sin(stretch*(i + math.radians(shift))))
 
-            ret[i, amplitude + num:(WIDTH - amplitude + num)] = rsz[i, amplitude:(WIDTH - amplitude)]
+            ret[i, amplitude + num:(DEFAULT_WIDTH - amplitude + num)] = rsz[i, amplitude:(DEFAULT_WIDTH - amplitude)]
     elif (axis is 1):
-        factor = (HEIGHT - 2*amplitude)/HEIGHT
+        factor = (DEFAULT_HEIGHT - 2*amplitude)/DEFAULT_HEIGHT
         rsz = resize_image(image, factor, factor)
 
-        for i in range(0, WIDTH):
+        for i in range(DEFAULT_WIDTH):
             num = round(amplitude*math.sin(stretch*(i + math.radians(shift))))
 
-            ret[amplitude + num:(HEIGHT - amplitude + num), i] = rsz[amplitude:(HEIGHT - amplitude), i]
+            ret[amplitude + num:(DEFAULT_HEIGHT - amplitude + num), i] = rsz[amplitude:(DEFAULT_HEIGHT - amplitude), i]
     
     return ret
 
@@ -457,26 +504,19 @@ def generate_mask_round(seed, num_shapes):
     num_shapes: Number of round objects you want to generate
     '''
     ret = make_black()
+    random.seed(seed)
 
     for k in range(int(num_shapes/2)): # for circles
-        random.seed(seed*k)
         radius = random.randint(15, 25)
-        random.seed(seed*k + 100)
-        a = random.randint(radius, HEIGHT - radius - 1) 
-        random.seed(seed*k + 200)
-        b = random.randint(radius, WIDTH - radius - 1)
+        a = random.randint(radius, DEFAULT_HEIGHT - radius - 1) 
+        b = random.randint(radius, DEFAULT_WIDTH - radius - 1)
         cv2.circle(ret,(a,b), radius, (255,255,255), -1)
 
     for k in range(num_shapes - int(num_shapes/2)):
-        random.seed(seed*k + 300)
         major_axis = random.randint(25,40)
-        random.seed(seed*k + 400)
         minor_axis = random.randint(10,25)
-        random.seed(seed*k + 500)
-        a = random.randint(major_axis, HEIGHT - major_axis - 1) 
-        random.seed(seed*k + 600)
-        b = random.randint(minor_axis, WIDTH - minor_axis - 1)
-        random.seed(seed*k + 700)
+        a = random.randint(major_axis, DEFAULT_HEIGHT - major_axis - 1) 
+        b = random.randint(minor_axis, DEFAULT_WIDTH - minor_axis - 1)
         angle = random.randint(0, 360)
         cv2.ellipse(ret, (b,a), (major_axis, minor_axis), angle, 0, 360, (255,255,255), -1)
 
@@ -503,25 +543,23 @@ def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
         any positive integer
         default value is 1
     '''
-    s1 = initialize(path1)
+    s1 = initialize(SHADOW_1_PATH)
     old_h1, old_w1, old_c1 = s1.shape
     shadow1 = cv2.resize(s1, (int(old_w1/2),int(old_h1/2)), interpolation=cv2.INTER_LINEAR)
     h1, w1, c1 = shadow1.shape
-    shadow2 = initialize(path2)
+    shadow2 = initialize(SHADOW_2_PATH)
     h2, w2, c2 = shadow2.shape
-    shadow3 = initialize(path3)
+    shadow3 = initialize(SHADOW_3_PATH)
     h3, w3, c3 = shadow3.shape 
-    s4 = initialize(path4)
+    s4 = initialize(SHADOW_4_PATH)
     old_h4, old_w4, old_c4 = s4.shape
     shadow4 = cv2.resize(s4, (int(old_w4*2),int(old_h4*2)), interpolation=cv2.INTER_LINEAR)
     h4, w4, c4, = shadow4.shape
-    temp = np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8) #matrix of 1s, will allow overlapping shadows to be darker
+    temp = np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8) #matrix of 1s, will allow overlapping shadows to be darker
 
-    random.seed(seed + 10)
+    random.seed(seed)
     sh_x = random.randint(0, int((min(w1/h1, w2/h2, w3/h3, w4/h4)*100 - 3)/3))/100
-    random.seed(seed + 20)
     sh_y = random.randint(0, int((min(h1/w1, h2/w2, h3/w3, h4/w4)*100 - 3)/3))/100
-    random.seed(seed + 30)
     flip = random.randint(0,1)
  
     for k in range(freq1):
@@ -530,10 +568,8 @@ def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
         if (flip == 0): 
             gss1 = reflect_image(gss1,1)
 
-        random.seed(seed*(k+1) + 200)
-        hc1 = random.randint(0, HEIGHT - h1)
-        random.seed(seed*(k+1) + 300)
-        wc1 = random.randint(0, WIDTH - w1)
+        hc1 = random.randint(0, DEFAULT_HEIGHT - h1)
+        wc1 = random.randint(0, DEFAULT_WIDTH - w1)
 
         temp[hc1:(hc1+h1), wc1:(wc1+w1)] = (temp[hc1:(hc1+h1), wc1:(wc1+w1)].astype(float) * np.divide((np.full((h1, w1, 3), 255, dtype=np.uint8) - gss1).astype(float), 255)).astype(int)
 
@@ -543,10 +579,8 @@ def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
         if (flip == 0):
             gss2 = reflect_image(gss2,1)
 
-        random.seed(seed*(k+1) + 600)
-        hc2 = random.randint(0, HEIGHT - h2)
-        random.seed(seed*(k+1) + 700)
-        wc2 = random.randint(0, WIDTH - w2)
+        hc2 = random.randint(0, DEFAULT_HEIGHT - h2)
+        wc2 = random.randint(0, DEFAULT_WIDTH - w2)
 
         temp[hc2:(hc2+h2), wc2:(wc2+w2)] = (temp[hc2:(hc2+h2), wc2:(wc2+w2)].astype(float) * np.divide((np.full((h2, w2, 3), 255, dtype=np.uint8) - gss2).astype(float), 255)).astype(int)
 
@@ -556,10 +590,8 @@ def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
         if (flip == 0):
             gss3 = reflect_image(gss3,1)
 
-        random.seed(seed*(k+1) + 1000)
-        hc3 = random.randint(0, HEIGHT - h3)
-        random.seed(seed*(k+1) + 1100)
-        wc3 = random.randint(0, WIDTH - w3)
+        hc3 = random.randint(0, DEFAULT_HEIGHT - h3)
+        wc3 = random.randint(0, DEFAULT_WIDTH - w3)
 
         temp[hc3:(hc3+h3), wc3:(wc3+w3)] = (temp[hc3:(hc3+h3), wc3:(wc3+w3)].astype(float) * np.divide((np.full((h3, w3, 3), 255, dtype=np.uint8) - gss3).astype(float), 255)).astype(int)
 
@@ -569,14 +601,12 @@ def generate_mask_object(seed, freq1=1, freq2=1, freq3=1, freq4=1):
         if (flip == 0):
             gss4 = reflect_image(gss4,1)
 
-        random.seed(seed*(k+1) + 1400)
-        hc4 = random.randint(0, HEIGHT - h4)
-        random.seed(seed*(k+1) + 1500)
-        wc4 = random.randint(0, WIDTH - w4)
+        hc4 = random.randint(0, DEFAULT_HEIGHT - h4)
+        wc4 = random.randint(0, DEFAULT_WIDTH - w4)
 
         temp[hc4:(hc4+h4), wc4:(wc4+w4)] = (temp[hc4:(hc4+h4), wc4:(wc4+w4)].astype(float) * np.divide((np.full((h4, w4, 3), 255, dtype=np.uint8) - gss4).astype(float), 255)).astype(int)
 
-    return np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8) - temp
+    return np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8) - temp
 
 def shadow_round(image, num, seed, darken=0.4):   
     '''
@@ -665,13 +695,12 @@ def glare_mask(seed):
         any integer
     '''
     ret = make_black()
+    random.seed(seed)
 
     # center
     radius = 5
-    random.seed(seed + 100)
-    a = random.randint(radius + 50, HEIGHT - radius - 51) 
-    random.seed(seed + 200)
-    b = random.randint(radius + 50, WIDTH - radius - 51)
+    a = random.randint(radius + 50, DEFAULT_HEIGHT - radius - 51) 
+    b = random.randint(radius + 50, DEFAULT_WIDTH - radius - 51)
     cv2.circle(ret,(b,a), radius, (255,255,255), -1)
 
     pts1 = np.array([[b,a],[0,0],[25, 0]], np.int32)
@@ -690,19 +719,19 @@ def glare_mask(seed):
     pts1 = pts1.reshape((-1,1,2))
     cv2.fillPoly(ret,[pts1],(255,255,255))
 
-    pts1 = np.array([[b,a],[WIDTH - 1,0],[WIDTH - 1, 25]], np.int32)
+    pts1 = np.array([[b,a],[DEFAULT_WIDTH - 1,0],[DEFAULT_WIDTH - 1, 25]], np.int32)
     pts1 = pts1.reshape((-1,1,2))
     cv2.fillPoly(ret,[pts1],(255,255,255))
 
-    pts1 = np.array([[b,a],[WIDTH - 1,300],[WIDTH - 1, 325]], np.int32)
+    pts1 = np.array([[b,a],[DEFAULT_WIDTH - 1,300],[DEFAULT_WIDTH - 1, 325]], np.int32)
     pts1 = pts1.reshape((-1,1,2))
     cv2.fillPoly(ret,[pts1],(255,255,255))
 
-    pts1 = np.array([[b,a],[WIDTH - 1,400],[WIDTH - 1, 425]], np.int32)
+    pts1 = np.array([[b,a],[DEFAULT_WIDTH - 1,400],[DEFAULT_WIDTH - 1, 425]], np.int32)
     pts1 = pts1.reshape((-1,1,2))
     cv2.fillPoly(ret,[pts1],(255,255,255))
 
-    pts1 = np.array([[b,a],[WIDTH - 1,650],[WIDTH - 1, 675]], np.int32)
+    pts1 = np.array([[b,a],[DEFAULT_WIDTH - 1,650],[DEFAULT_WIDTH - 1, 675]], np.int32)
     pts1 = pts1.reshape((-1,1,2))
     cv2.fillPoly(ret,[pts1],(255,255,255))
 
@@ -751,10 +780,10 @@ def lens_glare(image, seed):
     Does not affect labels.
     '''
 
-    return apply_mask(image, apply_gaussian(glare_mask(seed), kernel_x = 10, kernel_y = 10), np.full((HEIGHT, WIDTH, 3), 255, dtype=np.uint8))
+    return apply_mask(image, apply_gaussian(glare_mask(seed), kernel_x = 10, kernel_y = 10), np.full((DEFAULT_HEIGHT, DEFAULT_WIDTH, 3), 255, dtype=np.uint8))
 
-if __name__ == "__main__":
-    image = initialize(path)
+def main():
+    image = initialize(DEFAULT_IMAGE_PATH)
 
     display_image(image)
 
@@ -764,6 +793,9 @@ if __name__ == "__main__":
     resized = resize_image(image, 0.5, 0.25)
     display_image(resized)
 
+    cropped = crop_image(image, 100, 500, 200, 300)
+    display_image(cropped)
+
     sp1 = apply_saltpepper(image, 0)
     display_image(sp1)
 
@@ -772,10 +804,6 @@ if __name__ == "__main__":
 
     sp3 = apply_saltpepper(image, 2)
     display_image(sp3)
-
-    # # pixel_swap is very slow
-    # pixel = pixel_swap(image, 100, 100000)
-    # display_image(pixel)
 
     ms1 = apply_mosaic(image, 10, 1000)
     display_image(ms1)
@@ -865,3 +893,7 @@ if __name__ == "__main__":
     display_image(glare)
 
     cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()
