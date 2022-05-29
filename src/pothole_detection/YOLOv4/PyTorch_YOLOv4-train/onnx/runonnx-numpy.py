@@ -1,4 +1,3 @@
-from PIL import Image
 import onnxruntime
 import numpy as np
 import time
@@ -136,7 +135,7 @@ def run_inference(img, onnx_weights):
     ort_session = onnxruntime.InferenceSession(onnx_weights)
 
     # Resize the image to [448, 448] and add padding (preserve ratio)
-    img = cv2.imread(img)
+    # img = cv2.imread(img)
     img0x, img0y = img.shape[1], img.shape[0]
 
     ratio = 448 / img0x
@@ -177,10 +176,7 @@ def run_inference(img, onnx_weights):
 
     for i, det in enumerate(pred):
         det[:, :4] = scale_coords(
-            img1_shape=(448, 448), coords=det[:, :4], img0_shape=(img0y, img0x)
+            img1_shape=(448, 448), coords=det[:, :4], img0_shape=(180, 330)
         )
         output.append(det)
     return output
-
-
-print(run_inference('../inference/9o.png', 'best.onnx'))
