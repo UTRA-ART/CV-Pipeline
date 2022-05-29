@@ -86,16 +86,14 @@ def nms(boxes, iou_thres=0.6):
         widths = np.maximum(0, X2 - X1 + 1)
         heights = np.maximum(0, Y2 - Y1 + 1)
 
-        overlaps = (widths * heights) / \
-            (areas[indices] + areas[i] - (widths * heights))
+        overlaps = (widths * heights) / (areas[indices] + areas[i] - (widths * heights))
 
         # If the overlap is greater than the threshold, remove
         if np.any([iou > iou_thres if iou != 1.0 else False for iou in overlaps]):
             keep_index = np.multiply(
                 keep_index,
                 np.array(
-                    [int(iou < iou_thres) if iou !=
-                     1.0 else 1 for iou in overlaps]
+                    [int(iou < iou_thres) if iou != 1.0 else 1 for iou in overlaps]
                 ),
             )
 
@@ -141,18 +139,15 @@ def run_inference(img, onnx_weights):
 
     ratio = 448 / img0x
     size = (int(img0x * ratio), int(img0y * ratio))
-    img = cv2.resize(img, size,
-                     interpolation=cv2.INTER_AREA)
+    img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
 
     newx, newy = img.shape[1], img.shape[0]
     if newx > newy:
         padding = (448 - newy) // 2
-        img = cv2.copyMakeBorder(
-            img, padding, padding, 0, 0, cv2.BORDER_CONSTANT)
+        img = cv2.copyMakeBorder(img, padding, padding, 0, 0, cv2.BORDER_CONSTANT)
     else:
         padding = (448 - newx) // 2
-        img = cv2.copyMakeBorder(
-            img, 0, 0, padding, padding, cv2.BORDER_CONSTANT)
+        img = cv2.copyMakeBorder(img, 0, 0, padding, padding, cv2.BORDER_CONSTANT)
     img = img[..., ::-1]
 
     # Switch up the axis to be compatible with the model
