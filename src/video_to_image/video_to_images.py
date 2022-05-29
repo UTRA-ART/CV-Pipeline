@@ -4,15 +4,17 @@ import logging
 
 import cv2
 
-VIDEO_PATH: str = f"{os.path.dirname(os.path.abspath(__file__))}/videos/uoft-lanes-1.mp4"
+VIDEO_PATH: str = (
+    f"{os.path.dirname(os.path.abspath(__file__))}/videos/uoft-lanes-1.mp4"
+)
 IMAGE_DIR_PATH: str = f"{os.path.dirname(os.path.abspath(__file__))}/images"
 
 logger = logging.getLogger("video_to_images")
 logging.basicConfig(
-    format='[%(levelname)s] [%(asctime)s] %(name)s: %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S %z',
+    format="[%(levelname)s] [%(asctime)s] %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S %z",
     # TODO(@thedavidchu): change to logging.INFO once you are done debugging
-    level=logging.DEBUG
+    level=logging.DEBUG,
 )
 
 
@@ -102,8 +104,10 @@ def trim_video(total_num_frames: int = 100, overwrite: bool = False) -> None:
     if os.path.exists(output_video_path) and not overwrite:
         logger.debug(f"{output_video_path} already exists. Not overwriting")
         return
-    fourcc = cv2.VideoWriter_fourcc(*'MJP4')
-    out = cv2.VideoWriter(output_video_path, fourcc=fourcc, fps=fps, frameSize=(width, height))
+    fourcc = cv2.VideoWriter_fourcc(*"MJP4")
+    out = cv2.VideoWriter(
+        output_video_path, fourcc=fourcc, fps=fps, frameSize=(width, height)
+    )
 
     for i in range(total_num_frames):
         success, img = vidcap.read()
@@ -112,7 +116,7 @@ def trim_video(total_num_frames: int = 100, overwrite: bool = False) -> None:
             logger.info(f"End of video at frame {i}")
             break
         out.write(img)
-        if cv2.waitKey(1) == ord('q'):
+        if cv2.waitKey(1) == ord("q"):
             break
 
     vidcap.release()
