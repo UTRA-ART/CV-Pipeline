@@ -1,5 +1,10 @@
 """
 Cluster segments of detected lane line and fit spline lines.
+
+Maintainers
+-----------
+1. @Jason-Y000 (wrote the original)
+2. @thedavidchu (refactored)
 """
 import os
 import time
