@@ -150,3 +150,4 @@ models/
 runs/
 wandb/
 *.DS_Store/
+.DS_Store
