@@ -5,7 +5,7 @@ from scipy import interpolate
 import matplotlib.pyplot as plt
 import time
 
-img_pth = '/Users/jasonyuan/Desktop/Test2.png'
+img_pth = '/Users/jasonyuan/Desktop/Test_mask.png'
 
 # Add later to catch RankWarning
 # import numpy as np
@@ -40,15 +40,13 @@ def lane_fitting(points):
     x_width = abs(sorted_points_x[-1][1] - sorted_points_x[0][1])
     y_width = abs(sorted_points_y[-1][0] - sorted_points_y[0][0])
 
-    if (y_width < 15) or ((x_width < 15) and (y_width < 15)):    # Hard-coded parameter, update maybe
-        print(y_width)
-        print(x_width)
+    if x_width < 20 or y_width < 25 or len(points) < 200:    # Hard-coded parameter, update maybe
         return [[],[]]
 
     # print(sorted_points)
     pts_added = 0
     total_pts = len(points)
-    num_windows = 20
+    num_windows = 30
 
     slice = int(total_pts//num_windows)
 
@@ -62,15 +60,15 @@ def lane_fitting(points):
         x_avg = np.mean(group,axis=0)[1]
         y_avg = np.mean(group,axis=0)[0]
 
-        sigma_x = np.sqrt(np.sum(np.power(group[:,1]-x_avg,2))/group.shape[0])
-        sigma_y = np.sqrt(np.sum(np.power(group[:,0]-y_avg,2))/group.shape[0])
+        # sigma_x = np.sqrt(np.sum(np.power(group[:,1]-x_avg,2))/group.shape[0])
+        # sigma_y = np.sqrt(np.sum(np.power(group[:,0]-y_avg,2))/group.shape[0])
 
         # print(sigma_x, sigma_y)
 
-        if (sigma_x < 5) and (sigma_y < 5):
-            fit_points.append([y_avg,x_avg])
+        # if (sigma_x < 5) and (sigma_y < 5):
+        fit_points.append([y_avg,x_avg])
 
-    if len(fit_points) == 0:
+    if len(fit_points) <= 3:
         return [[],[]]
 
     fit_points = np.array(fit_points)
@@ -80,10 +78,62 @@ def lane_fitting(points):
     y = fit_points[:,0]
     tck,u = interpolate.splprep([x,y],k=3,s=32)
     # print(u)
-    u = np.linspace(u[0]-0.25,u[-1]+0.25,500)
+    # u = np.linspace(u[0]-0.05,u[-1]+0.05,500)
     # print(tck)
     out = interpolate.splev(u,tck)
     return out
+
+def gen_fit_points(image):
+
+    if len(image.shape) == 3:
+        input = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    else:
+        input = image
+
+    params = cv2.SimpleBlobDetector_Params()
+    params.blobColor = 255
+    params.minDistBetweenBlobs = 20
+    params.minThreshold = 0
+    params.maxThreshold = 255
+    params.minArea = 10
+    params.filterByCircularity = True
+    params.minCircularity = 0.05
+    params.maxCircularity = 2
+    params.filterByConvexity = True
+    params.minConvexity = 0.05
+    params.maxConvexity = 2
+    params.filterByInertia = True
+    params.minInertiaRatio = 0.05
+    params.maxInertiaRatio = 2
+    detector = cv2.SimpleBlobDetector_create(params)
+    keypoints = detector.detect(input)
+
+    for kp in keypoints:
+        cv2.circle(input,(int(kp.pt[0]),int(kp.pt[1])),int(kp.size/2),0,-1)
+
+    input_norm = input/255
+    all_fit_points = []
+
+    rows = np.where(input_norm==1)[0].reshape(-1,1)
+    cols = np.where(input_norm==1)[1].reshape(-1,1)
+    coords = np.concatenate((rows,cols),axis=1)     # (y,x) points
+
+    if coords.shape[0] < 5:
+        return all_fit_points
+
+    clustering = DBSCAN(eps=5, min_samples=35).fit(coords)
+    labels = clustering.labels_
+
+    clusters = sort_by_cluster(labels,coords)
+
+    for label,pts in clusters.items():
+        if label == -1:
+            continue
+        else:
+            out = lane_fitting(pts)
+            all_fit_points.append(out)
+
+    return all_fit_points
 
 if __name__ == "__main__":
     # start = time.perf_counter()
@@ -95,7 +145,7 @@ if __name__ == "__main__":
     cols = np.where(input_norm==1)[1].reshape(-1,1)
     coords = np.concatenate((rows,cols),axis=1)     # (y,x) points
 
-    clustering = DBSCAN(eps=15, min_samples=30).fit(coords)
+    clustering = DBSCAN(eps=9, min_samples=35).fit(coords)
     labels = clustering.labels_
 
     for i,pt in enumerate(coords):
@@ -122,13 +172,6 @@ if __name__ == "__main__":
         if label == -1:
             continue
         else:
-            # coefficients = lane_fitting(pts,15)
-            # poly = np.poly1d(coefficients)
-            # min_x = pts[0][1]
-            # max_x = pts[len(pts)-1][1]
-            #
-            # xrange = np.linspace(min_x,max_x,endpoint=True)
-            # plt.plot(xrange,poly(xrange),'-',c='k')
             out = lane_fitting(pts)
             # print(out[0])
             # print(out[1])
