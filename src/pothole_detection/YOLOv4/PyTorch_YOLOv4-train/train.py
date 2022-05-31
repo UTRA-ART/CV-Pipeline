@@ -674,7 +674,10 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--weights", type=str, default="yolov4.weights", help="initial weights path"
+        "--weights",
+        type=str,
+        default="yolov4-tiny.weights",
+        help="initial weights path",
     )  # runs/train/exp94/weights/best.pt
     parser.add_argument(
         "--cfg", type=str, default="./cfg/yolov4-tiny.cfg", help="model.yaml path"
@@ -751,7 +754,7 @@ if __name__ == "__main__":
         help="number of images for W&B logging, max 100",
     )
     parser.add_argument(
-        "--workers", type=int, default=4, help="maximum number of dataloader workers"
+        "--workers", type=int, default=1, help="maximum number of dataloader workers"
     )
     parser.add_argument("--project", default="runs/train", help="save to project/name")
     parser.add_argument("--name", default="exp", help="save to project/name")

@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
 import numpy as np
 import random
 import os
@@ -45,7 +45,11 @@ def add_noise(img):
     for i in range(num):
         x = random.randint(0, img.size[0] - 1)
         y = random.randint(0, img.size[1] - 1)
-        pixels[y][x] = random.randint(0, 255)
+        pixels[y][x] = (
+            random.randint(0, 255),
+            random.randint(0, 255),
+            random.randint(0, 255),
+        )
 
     return Image.fromarray(pixels)
 
@@ -83,13 +87,19 @@ def add_patches(img, x_rad, y_rad, x1, y1):
 
             if total > r:
                 # print(x, y)
-                img.putpixel((x, y), random.randint(25, 50))
+                pixel = (
+                    random.randint(0, 100),
+                    random.randint(0, 100),
+                    random.randint(0, 100),
+                )
+                img.putpixel((x, y), random.randint(25, 75))
 
     return img
 
 
 def draw_ellipse(input_path, max_potholes):
     image = Image.open(input_path)
+    image = ImageEnhance.Brightness(image).enhance(0.25)
     count = 0
     max_ = random.randint(2, max_potholes)
     potholes = []
@@ -116,10 +126,11 @@ def draw_ellipse(input_path, max_potholes):
                 loc_y + y_rad,
             )
             # Mask a noisy image in the shape of a pothole
-            rgb = min(int(130 + mean), 255)
+            rgb = random.randint(200, 255)
+            rgb = (rgb,) * 3
             # Different type of potholes
             select = random.randint(1, 5)
-            background = Image.new("L", image.size, rgb)
+            background = Image.new("RGB", image.size, rgb)
             obj_class = 0
             if select == 1:
                 background = add_patches(background, x_rad, y_rad, x_start, y_start)
@@ -130,28 +141,25 @@ def draw_ellipse(input_path, max_potholes):
                 ImageFilter.GaussianBlur(random.randint(50, 125) / 100)
             )
             # Scale down image to get a choppier ellipse
-            scale = random.randint(30, 60) / 100
-            mask = Image.new(
-                "L", ((int)(image.width * scale), (int)(image.height * scale)), 0
-            )
-            ImageDraw.Draw(mask).ellipse(
-                (
-                    (int)(x_start * scale),
-                    (int)(y_start * scale),
-                    (int)(x_end * scale),
-                    (int)(y_end * scale),
-                ),
-                fill=255,
-            )
-            mask = mask.resize((image.width, image.height))
+            # scale = random.randint(30, 60) / 100
+            # mask = Image.new("L", ((int)(image.width * scale),
+            #                  (int)(image.height * scale)), 0)
+            # ImageDraw.Draw(mask).ellipse(
+            #     ((int)(x_start * scale), (int)(y_start * scale),
+            #      (int)(x_end * scale), (int)(y_end * scale)), fill=255)
+            # mask = mask.resize((image.width, image.height))
 
-            mask = mask.filter(ImageFilter.GaussianBlur(random.randint(1, 4)))
+            # mask = mask.filter(ImageFilter.GaussianBlur(random.randint(1, 4)))
+            mask = Image.new("L", image.size, 0)
+            ImageDraw.Draw(mask).ellipse((x_start, y_start, x_end, y_end), fill=255)
             image = Image.composite(background, image, mask)
             potholes.append([loc_x, loc_y, x_rad * 2, y_rad * 2, obj_class])
             count += 1
     if len(potholes) == 0:
         return
-    image.save(os.path.join(DATA_OUT, Path(input_path).name))
+    image.save(
+        os.path.join(DATA_OUT, os.path.splitext(Path(input_path).name)[0] + "D.png")
+    )
     height, width, rgb = np.array(image).shape
     # Normalize potholes locations
     potholes = [
@@ -165,7 +173,7 @@ def draw_ellipse(input_path, max_potholes):
         for x in potholes
     ]
     # Save the label
-    filename = os.path.splitext(Path(input_path).name)[0] + ".txt"
+    filename = os.path.splitext(Path(input_path).name)[0] + "D.txt"
     file = open(os.path.join(LABEL_PATH, filename), "w")
     for i in range(len(potholes)):
         file.write(
