@@ -43,7 +43,7 @@ TEST_IMAGE_PATH: str = f"images/{SUBSTITUTE}.png"
 GREEN_TOLERANCE: int = 10
 IOU_THRESHOLD: float = 0.3
 MIN_AREA_RATIO: float = 0.05
-MAX_AREA_RATIO: float = 0.9     # Is this too tight of a bound?
+MAX_AREA_RATIO: float = 0.9  # Is this too tight of a bound?
 
 
 def calibrate_green(
@@ -115,8 +115,8 @@ def get_green(
 
 def get_large_contours(
     img_bgr: np.ndarray,
-    min_area_ratio: float = 0.0,    # Minimum theoretical value
-    max_area_ratio: float = 1.0,    # Maximum theoretical value
+    min_area_ratio: float = 0.0,  # Minimum theoretical value
+    max_area_ratio: float = 1.0,  # Maximum theoretical value
     threshold: int = 10,
     draw_contours: bool = False,
 ) -> List[np.ndarray]:
@@ -145,9 +145,7 @@ def get_large_contours(
     )
 
     # Sort by area
-    sorted_contours = sorted(
-        contours, key=lambda c: cv2.contourArea(cv2.convexHull(c))
-    )
+    sorted_contours = sorted(contours, key=lambda c: cv2.contourArea(cv2.convexHull(c)))
     large_contours = [
         c for c in sorted_contours if min_area < cv2.contourArea(c) < max_area
     ]
@@ -205,12 +203,8 @@ def main(draw_contours: bool = False):
     if tight_bounding_rects:
         full_bounding_rect = np.array(tight_bounding_rects)
         min_x, min_y, min_w, min_h = np.min(full_bounding_rect, axis=0)
-        max_x = np.max(
-            full_bounding_rect[:, 0] + full_bounding_rect[:, 2], axis=0
-        )
-        max_y = np.max(
-            full_bounding_rect[:, 1] + full_bounding_rect[:, 3], axis=0
-        )
+        max_x = np.max(full_bounding_rect[:, 0] + full_bounding_rect[:, 2], axis=0)
+        max_y = np.max(full_bounding_rect[:, 1] + full_bounding_rect[:, 3], axis=0)
         point_of_interest = ((min_x + max_x) // 2, max_y)
 
     if draw_contours:
