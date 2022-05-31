@@ -13,9 +13,11 @@ the shade of green of the ramp.
 shapes (I use contours because I am lazy).
 5. We take all contours larger than a given area.
 6. We approximate each contour with a convex hull and bound the contour with a
-rectangle
+(non-rotated) rectangle
 7. For each of these combinations, we take the rectangles where the
 corresponding convex hull makes up at least $IOU_THRESH of the area.
+8. From all of the rectangles, we find the mid-x and lowest (as appears in the
+image) y point. This is returned.
 
 Immediately Foreseeable Limitations
 -----------------------------------
@@ -24,6 +26,8 @@ the contours are "inside-out"), we specify a maximum area that the ramp can be.
 If we are very close to or on the ramp, then this may cause the model to stop
 detecting the ramp.
 2. We are so far unable to identify rotated-but-still-rectangular shapes.
+3. If there is a wide variety of colours in the ramp, then we may be too
+lenient with what we accept as part of the ramp.
 """
 
 from typing import List, Tuple
@@ -32,16 +36,24 @@ import cv2
 import numpy as np
 
 
-SUBSTITUTE: str = "topview"
+SUBSTITUTE: str = "frontview"
 CALIB_IMG_PATH: str = f"images/{SUBSTITUTE}_calibration.png"
 TEST_IMAGE_PATH: str = f"images/{SUBSTITUTE}.png"
 GREEN_TOLERANCE: int = 10
-IOU_THRESHOLD: float = 0.7
+IOU_THRESHOLD: float = 0.3
 
 
 def calibrate_green(
     calib_img_path: str, tol: int = 5
 ) -> Tuple[Tuple[int, int], Tuple[int, int], Tuple[int, int]]:
+    """Calibrate the correct 'green' pixels.
+
+    Improvements
+    ------------
+    1. Potentially separate the various tolerances. There are 6 potential
+    tolerances:
+        hue_up, hue_down, lum_up, lum_down, sat_up, sat_down
+    """
     img = cv2.imread(calib_img_path)
     img_hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     green_patch = img_hls
@@ -134,13 +146,8 @@ def get_large_contours(
 
     if draw_contours:
         img_bgr_copy = img_bgr.copy()
-        # Draw top 10 largest contours
-        cv2.drawContours(img_bgr_copy, sorted_contours[-10:], -1, (0, 255, 0), 1)
         # Draw contours larger than min_area
         cv2.drawContours(img_bgr_copy, large_contours, -1, (255, 0, 0), 1)
-        cv2.drawContours(
-            img_bgr_copy, large_contours, len(large_contours) - 1, (0, 0, 255), 1
-        )
         cv2.imshow(
             f"Large contours, {c=} "
             + "(green=top-10, blue=larger than min_area, red=largest)",
@@ -158,7 +165,7 @@ def main(draw_contours: bool = False):
     img_hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     matches_green = get_green(img_hls, hue_range, lum_range, sat_range)
 
-    # We are expecting a 3-D image, so we stack the 2-D tensors
+    # We are expecting a 3-D tensor, so we stack the 2-D tensors
     matches_green_bgr = np.stack([matches_green, matches_green, matches_green], axis=2)
     height, width, _ = matches_green_bgr.shape
     contours = get_large_contours(
@@ -186,8 +193,15 @@ def main(draw_contours: bool = False):
         if cv2.contourArea(c) >= IOU_THRESHOLD * cv2.contourArea(r)
     ]
 
+    # Group rectangles
+    full_bounding_rect = np.array(tight_bounding_rects)
+    min_x, min_y, min_w, min_h = np.min(full_bounding_rect, axis=0)
+    max_x = np.max(full_bounding_rect[:, 0] + full_bounding_rect[:, 2], axis=0)
+    max_y = np.max(full_bounding_rect[:, 1] + full_bounding_rect[:, 3], axis=0)
+    point_of_interest = ((min_x + max_x) // 2, max_y)
+
     if draw_contours:
-        cv2.imshow("Pixels Belonging to the Ramp", matches_green)
+        cv2.imshow("1 - Pixels Belonging to the Ramp", matches_green)
 
         cv2.drawContours(matches_green_bgr, convex_hulls, -1, (0, 255, 0), 1)
         for rect in tight_bounding_rects:
@@ -196,14 +210,18 @@ def main(draw_contours: bool = False):
         cv2.drawContours(
             matches_green_bgr, tight_bounding_rot_rects, -1, (0, 0, 255), 1
         )
-        cv2.imshow("Boxes containing parts of the ramp", matches_green_bgr)
+        cv2.imshow("2 - Boxes containing parts of the ramp", matches_green_bgr)
+
+        cv2.circle(img, point_of_interest, 5, (0, 0, 255), -1)
+        cv2.imshow("3 - Point of Interest", img)
 
         # End of program
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 
-    return tight_bounding_rects
+    return point_of_interest
 
 
 if __name__ == "__main__":
-    main(draw_contours=True)
+    point_of_interest = main(draw_contours=False)
+    print(point_of_interest)
