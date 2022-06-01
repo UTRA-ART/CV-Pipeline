@@ -79,18 +79,19 @@ def least_squares(raw_depth_vals_path: str, drawit: bool = True) -> np.ndarray:
     return fit
 
 
-def generate_processed_depth_vals(raw_depth_vals_path: str, processed_depth_vals_path: str):
+def generate_processed_depth_vals(
+    raw_depth_vals_path: str, processed_depth_vals_path: str
+):
     a, b, c = least_squares(raw_depth_vals_path)
 
     processed_depth_vals: Dict[Tuple[int, int], float] = {
-        f"({x}, {y})": a * x + b * y + c
-        for x in range(WIDTH)
-        for y in range(HEIGHT)
+        f"({x}, {y})": a * x + b * y + c for x in range(WIDTH) for y in range(HEIGHT)
     }
     with open(processed_depth_vals_path, "w") as f:
         json.dump(processed_depth_vals, f)
 
     least_squares(processed_depth_vals_path)
+
 
 if __name__ == "__main__":
     generate_processed_depth_vals(RAW_DEPTH_VALS_PATH, PROCESSED_DEPTH_VALS_PATH)
