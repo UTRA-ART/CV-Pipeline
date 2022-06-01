@@ -18,9 +18,7 @@ def load_raw_depth_vals() -> Dict[str, float]:
     return raw_depth_vals
 
 
-def process_raw_depth_vals(
-    raw_depth_vals: Dict[str, float]
-) -> np.ndarray:
+def process_raw_depth_vals(raw_depth_vals: Dict[str, float]) -> np.ndarray:
     depth_vals = np.zeros((HEIGHT, WIDTH), dtype=float)
     points = np.zeros((HEIGHT * WIDTH, 3), dtype=float)
     for y in range(HEIGHT):
@@ -58,22 +56,21 @@ def least_squares(drawit: bool = True) -> np.ndarray:
 
         # Plot raw data
         plt.figure()
-        ax = plt.subplot(111, projection='3d')
-        ax.scatter(xs, ys, zs, color='b')
+        ax = plt.subplot(111, projection="3d")
+        ax.scatter(xs, ys, zs, color="b")
 
         # Plot plane
         xlim = ax.get_xlim()
         ylim = ax.get_ylim()
         x_grid, y_grid = np.meshgrid(
-            np.arange(xlim[0], xlim[1]),
-            np.arange(ylim[0], ylim[1])
+            np.arange(xlim[0], xlim[1]), np.arange(ylim[0], ylim[1])
         )
         z_grid = fit[0] * x_grid + fit[1] * y_grid + fit[2]
-        ax.plot_wireframe(x_grid, y_grid, z_grid, color='k')
+        ax.plot_wireframe(x_grid, y_grid, z_grid, color="k")
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        ax.set_zlabel('z')
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
         plt.show()
     return fit
 
