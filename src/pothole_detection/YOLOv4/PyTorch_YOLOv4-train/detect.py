@@ -67,9 +67,14 @@ def detect(save_img=False):
     half = device.type != "cpu"  # half precision only supported on CUDA
 
     # Load model
-    model = Darknet(cfg, imgsz).cuda()
+    if device.type == 'CUDA':
+        model = Darknet(cfg, imgsz).cuda()
+    else:
+        model = Darknet(cfg, imgsz)
+
     try:
-        model.load_state_dict(torch.load(weights[0], map_location=device)["model"])
+        model.load_state_dict(torch.load(
+            weights[0], map_location=device)["model"])
         # model = attempt_load(weights, map_location=device)  # load FP32 model
         # imgsz = check_img_size(imgsz, s=model.stride.max())  # check img_size
     except:
@@ -99,7 +104,8 @@ def detect(save_img=False):
 
     # Get names and colors
     names = load_classes(names)
-    colors = [[random.randint(0, 255) for _ in range(3)] for _ in range(len(names))]
+    colors = [[random.randint(0, 255) for _ in range(3)]
+              for _ in range(len(names))]
 
     # Run inference
     t0 = time.time()
@@ -147,7 +153,8 @@ def detect(save_img=False):
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]
             if det is not None and len(det):
                 # Rescale boxes from img_size to im0 size
-                det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
+                det[:, :4] = scale_coords(
+                    img.shape[2:], det[:, :4], im0.shape).round()
 
                 # Print results
                 for c in det[:, -1].unique():
@@ -165,7 +172,8 @@ def detect(save_img=False):
                             .tolist()
                         )  # normalized xywh
                         with open(txt_path + ".txt", "a") as f:
-                            f.write(("%g " * 5 + "\n") % (cls, *xywh))  # label format
+                            f.write(("%g " * 5 + "\n") %
+                                    (cls, *xywh))  # label format
 
                     if save_img or view_img:  # Add bbox to image
                         label = "%s %.2f" % (names[int(cls)], conf)
@@ -201,7 +209,8 @@ def detect(save_img=False):
                         w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                         h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                         vid_writer = cv2.VideoWriter(
-                            save_path, cv2.VideoWriter_fourcc(*fourcc), fps, (w, h)
+                            save_path, cv2.VideoWriter_fourcc(
+                                *fourcc), fps, (w, h)
                         )
                     vid_writer.write(im0)
 
@@ -236,8 +245,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--device", default="1", help="cuda device, i.e. 0 or 0,1,2,3 or cpu"
     )
-    parser.add_argument("--view-img", action="store_true", help="display results")
-    parser.add_argument("--save-txt", action="store_true", help="save results to *.txt")
+    parser.add_argument("--view-img", action="store_true",
+                        help="display results")
+    parser.add_argument("--save-txt", action="store_true",
+                        help="save results to *.txt")
     parser.add_argument(
         "--classes",
         nargs="+",
@@ -247,8 +258,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--agnostic-nms", action="store_true", help="class-agnostic NMS"
     )
-    parser.add_argument("--augment", action="store_true", help="augmented inference")
-    parser.add_argument("--update", action="store_true", help="update all models")
+    parser.add_argument("--augment", action="store_true",
+                        help="augmented inference")
+    parser.add_argument("--update", action="store_true",
+                        help="update all models")
     parser.add_argument(
         "--cfg", type=str, default="./cfg/yolov4-tiny.cfg", help="*.cfg path"
     )
