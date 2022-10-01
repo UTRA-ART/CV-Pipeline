@@ -141,6 +141,8 @@ YOLOv4/pytorch-YOLOv4/predictions
 *.txt
 *.jpg
 *.jpeg
+*.mp4
+*.mp4v
 *.onnx
 YOLOv4/PyTorch_YOLOv4-train/runs/
 YOLOv4/PyTorch_YOLOv4-train/inference/
