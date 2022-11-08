@@ -6,7 +6,7 @@ import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 from UNetDataset import LaneDataset
-from UNetModel import UNet
+from UNet import UNet
 import cv2
 import numpy as np
 import os
@@ -180,7 +180,8 @@ for e in range(num_epochs):
 
         # Check if the mask is truly binary
         test_label = labels.detach().cpu().numpy()
-        num_not_binary = np.where(((test_label > 0) & (test_label < 1)), 1, 0).sum()
+        num_not_binary = np.where(
+            ((test_label > 0) & (test_label < 1)), 1, 0).sum()
         # For calculating error
         pred_np = pred.detach().cpu()
         labels_np = labels.detach().cpu()

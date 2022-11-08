@@ -1,4 +1,4 @@
-from UNetModel import UNet
+from UNet import UNet
 from UNet_Mask_Label_Gen import define_region_of_interest
 import torch
 import cv2
@@ -12,8 +12,9 @@ import onnxruntime as ort
 
 video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 # video_path = "/Users/jasonyuan/Desktop/Section_of_dashcam.mp4"
-save_path = "/Users/jasonyuan/Desktop/Processed Frames"
-image_path = "/Users/jasonyuan/Desktop/Seattle Lane Driving Data"
+save_path = "output/"
+image_path = "C:/Users/ammar/Documents/CodingProjects/ART/CV-Pipeline/src/lane_detection/UNet-LaneDetection/input/additional-data/inputs/Gravel_2.png"
+weights_path = 'runs/1667872806.510513/1667872806.510513unet_gray_model_batch64_sheduled_lr0.1_last.pt'
 
 
 def find_edge_channel2(img):
@@ -40,9 +41,9 @@ def find_edge_channel(img):
     # gray_im = cv2.GaussianBlur(gray_im,(3,3),0)
     # Separate into quadrants
     med1 = np.median(gray_im[: height // 2, : width // 2])
-    med2 = np.median(gray_im[: height // 2, width // 2 :])
-    med3 = np.median(gray_im[height // 2 :, width // 2 :])
-    med4 = np.median(gray_im[height // 2 :, : width // 2])
+    med2 = np.median(gray_im[: height // 2, width // 2:])
+    med3 = np.median(gray_im[height // 2:, width // 2:])
+    med4 = np.median(gray_im[height // 2:, : width // 2])
 
     l1 = int(max(0, (1 - 0.205) * med1))
     u1 = int(min(255, (1 + 0.205) * med1))
@@ -50,21 +51,21 @@ def find_edge_channel(img):
 
     l2 = int(max(0, (1 - 0.205) * med2))
     u2 = int(min(255, (1 + 0.205) * med2))
-    e2 = cv2.Canny(gray_im[: height // 2, width // 2 :], l2, u2)
+    e2 = cv2.Canny(gray_im[: height // 2, width // 2:], l2, u2)
 
     l3 = int(max(0, (1 - 0.205) * med3))
     u3 = int(min(255, (1 + 0.205) * med3))
-    e3 = cv2.Canny(gray_im[height // 2 :, width // 2 :], l3, u3)
+    e3 = cv2.Canny(gray_im[height // 2:, width // 2:], l3, u3)
 
     l4 = int(max(0, (1 - 0.205) * med4))
     u4 = int(min(255, (1 + 0.205) * med4))
-    e4 = cv2.Canny(gray_im[height // 2 :, : width // 2], l4, u4)
+    e4 = cv2.Canny(gray_im[height // 2:, : width // 2], l4, u4)
 
     # Stitch the edges together
     edges_mask[: height // 2, : width // 2] = e1
-    edges_mask[: height // 2, width // 2 :] = e2
-    edges_mask[height // 2 :, width // 2 :] = e3
-    edges_mask[height // 2 :, : width // 2] = e4
+    edges_mask[: height // 2, width // 2:] = e2
+    edges_mask[height // 2:, width // 2:] = e3
+    edges_mask[height // 2:, : width // 2] = e4
 
     edges_mask_inv = cv2.bitwise_not(edges_mask)
 
@@ -81,22 +82,32 @@ def predict_lanes(frame, unet):
     # roi = roi.reshape(1,1,180,330)
     # roi = roi/255.
     # input = torch.Tensor(roi)
-
+    gray = cv2.cvtColor(frame_copy, cv2.COLOR_BGR2GRAY)
+    gradient_map = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=-1) # Gradient map along x
+    #         gradient_map = cv2.Laplacian(gray, cv2.CV_64F)
+    gradient_map = np.uint8(np.absolute(gradient_map))
     test_edges, test_edges_inv = find_edge_channel(frame_copy)
-    frame_copy = np.append(
-        frame_copy,
-        test_edges.reshape(test_edges.shape[0], test_edges.shape[1], 1),
-        axis=2,
-    )
-    frame_copy = np.append(
-        frame_copy,
-        test_edges_inv.reshape(test_edges_inv.shape[0], test_edges_inv.shape[1], 1),
-        axis=2,
-    )
-    frame_copy = cv2.resize(frame_copy, (330, 180))
+    # frame_copy = np.append(
+    #     frame_copy,
+    #     test_edges.reshape(test_edges.shape[0], test_edges.shape[1], 1),
+    #     axis=2,
+    # )
+    # frame_copy = np.append(
+    #     frame_copy,
+    #     test_edges_inv.reshape(
+    #         test_edges_inv.shape[0], test_edges_inv.shape[1], 1),
+    #     axis=2,
+    # )
+
+    frame_copy = np.zeros((gray.shape[0],gray.shape[1],4),dtype=np.uint8)
+    frame_copy[:,:,0] = gray
+    frame_copy[:,:,1] = test_edges
+    frame_copy[:,:,2] = test_edges_inv
+    frame_copy[:,:,3] = gradient_map
+    frame_copy = cv2.resize(frame_copy, (256, 160))
 
     input = torch.Tensor((frame_copy / 255.0).transpose(2, 0, 1)).reshape(
-        1, 5, 180, 330
+        1, 4, 160, 256
     )
     # x = (frame_copy/255.).transpose(2,0,1).reshape(1,5,180,330).astype(np.float32)
 
@@ -105,25 +116,40 @@ def predict_lanes(frame, unet):
     # output = ort_sess.run(None, {'Inputs': x})[0]
 
     unet.eval()
-    output = unet(input)
+
+    input = input.to(device="cuda")
+    unet = unet.to(device="cuda")
+
+    frames = 100
+    t1 = time.time()
+    for i in range(0, frames):
+        output = unet(input)
+
+    t2 = time.time()
+    print(f'Done. Inference @ {frames / (t2 - t1)} fps ')
+
     # print(output)
     # print(unet)
 
     output = torch.sigmoid(output)
-    output = output.detach().numpy()
+    output = output.detach().cpu().numpy()
     pred_mask = np.where(output > 0.5, 1, 0)
 
     # print(output)
     # print(ground_truth.shape)
     # print(pred_mask.size())
-    pred_mask = (pred_mask.squeeze(0)).transpose(1, 2, 0).squeeze().astype("float32")
+    pred_mask = (pred_mask.squeeze(0)).transpose(
+        1, 2, 0).squeeze().astype("float32")
     # pred_mask = cv2.resize(pred_mask,(1280,720),interpolation=cv2.INTER_AREA)
 
-    overlayed_mask = np.copy(cv2.resize(frame, (330, 180)))
+    overlayed_mask = np.copy(cv2.resize(frame, (256, 160)))
     # overlayed_mask = np.copy(input_img)
-    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 2] = 255
-    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 1] = 0
-    overlayed_mask[np.where(pred_mask == 1)[0], np.where(pred_mask == 1)[1], 0] = 0
+    overlayed_mask[np.where(pred_mask == 1)[0],
+                   np.where(pred_mask == 1)[1], 2] = 255
+    overlayed_mask[np.where(pred_mask == 1)[0],
+                   np.where(pred_mask == 1)[1], 1] = 0
+    overlayed_mask[np.where(pred_mask == 1)[0],
+                   np.where(pred_mask == 1)[1], 0] = 0
 
     # print(pred_mask.sum())
     # cv2.imshow("Input", frame)
@@ -147,18 +173,23 @@ if __name__ == "__main__":
     n = 0
     unet = UNet()
     unet.load_state_dict(
-        torch.load(
-            "/Users/jasonyuan/Desktop/UNet Weights/unet_model_batch64_scheduled_lr0.05_epochs40_e14_best.pt",
-            map_location=torch.device("cpu"),
-        )
+        torch.load(weights_path,
+                   map_location=torch.device("cuda"),
+                   )
     )
 
     frame = cv2.imread(
-        "/Users/jasonyuan/Desktop/UTRA:Projects/ART stuff/lane_dataset grass/image_rect_color_screenshot_09.12.2017 23.png"
+        image_path
     )
-    annotated, pred = predict_lanes(frame, unet)
 
-    cv2.imwrite("/Users/jasonyuan/Desktop/Test9.png", pred * 255)
+    annotated, pred = predict_lanes(frame, unet)
+    h, w = frame.shape[0:2]
+    print(frame.shape)
+    annotated = cv2.resize(annotated, (w, h))
+    pred = cv2.resize(pred, (w, h))
+
+    filename = image_path.split('/')[-1]
+    cv2.imwrite(save_path+filename, annotated)
 
     cv2.imshow("Annotated", annotated)
     cv2.imshow("Og", frame)
@@ -251,97 +282,3 @@ if __name__ == "__main__":
     # out.release()
     # cap.release()
     cv2.destroyAllWindows()
-
-
-# C++ Implementation of find_edge_channel ######################################
-
-# cv::CV_8UC1 getMedian(std::vector<cv::CV_8UC1> input2vec) {
-#   std::nth_element(input2vec.begin(), input2vec.begin() + input2vec.size() / 2, input2vec.end());
-#   return input2vec[input2vec.size() / 2];
-# }
-#
-# std::vector<cv::CV_8UC1> convertToQuadrant(cv::Mat input, int r_min, int r_max,
-#                                             int c_min, int c_max) {
-#
-#   std::vector<cv::CV_8UC1> output;
-#
-#   for (int r = r_min; r < r_max; r++) {
-#     for (int c = c_min; c < c_max; c++) {
-#       output.emplace_back(input[r][c]);
-#     }
-#   }
-#
-#   return output;
-# }
-#
-# std::pair<cv::Mat, cv::Mat> find_edge_channel(cv::Mat img) {
-#
-#     width = img.cols;
-#     height = img.rows
-#
-#     cv::Mat edges_mask;
-#     cv::Mat edges_mask_inv;
-#     cv::Mat gray_im;
-#
-#     cv::cvtColor(img,gray_im,cv::COLOR_BGR2GRAY);
-#
-#     // gray_im = cv2.GaussianBlur(gray_im,(3,3),0)
-#     // Separate into quadrants
-#     std::vector<cv::CV_8UC1> quad1 = convertToQuadrant(gray_im,0,static_cast<int>(height/2),
-#                                                             0,static_cast<int>(width/2));
-#
-#     std::vector<cv::CV_8UC1> quad2 = convertToQuadrant(gray_im,0,static_cast<int>(height/2),
-#                                                             static_cast<int>(width/2),width);
-#
-#     std::vector<cv::CV_8UC1> quad3 = convertToQuadrant(gray_im,static_cast<int>(height/2),height,
-#                                                             static_cast<int>(width/2),width);
-#
-#     std::vector<cv::CV_8UC1> quad4 = convertToQuadrant(gray_im,static_cast<int>(height/2),height,
-#                                                             0,static_cast<int>(width/2));
-#     double med1 = static_cast<double>(getMedian(quad1));
-#     double med2 = static_cast<double>(getMedian(quad2));
-#     double med3 = static_cast<double>(getMedian(quad3));
-#     double med4 = static_cast<double>(getMedian(quad4));
-#
-#     double l1 = std::max(0,std::floor((1-0.205)*med1));
-#     double u1 = std::min(255,std::floor((1+0.205)*med1));
-#     std::vector<int> quad1_int(quad1.begin(),quad1.end());
-#     cv::Mat quad1_mat(quad1_int,cv::CV_8UC1);
-#     cv::Mat e1;
-#     cv::Canny(quad1_mat,e1,l1,u1);
-#
-#     double l2 = std::max(0,std::floor((1-0.205)*med2));
-#     double u2 = std::min(255,std::floor((1+0.205)*med2));
-#     std::vector<int> quad2_int(quad2.begin(),quad2.end());
-#     cv::Mat quad2_mat(quad2_int,cv::CV_8UC1);
-#     cv::Mat e2;
-#     cv::Canny(quad2_mat,e2,l2,u2);
-#
-#     double l3 = std::max(0,std::floor((1-0.205)*med3));
-#     double u3 = std::min(255,std::floor((1+0.205)*med3));
-#     std::vector<int> quad3_int(quad3.begin(),quad3.end());
-#     cv::Mat quad3_mat(quad3_int,cv::CV_8UC1);
-#     cv::Mat e3;
-#     cv::Canny(quad3_mat,e3,l3,u3);
-#
-#     double l4 = std::max(0,std::floor((1-0.205)*med4));
-#     double u4 = std::min(255,std::floor((1+0.205)*med4));
-#     std::vector<int> quad4_int(quad4.begin(),quad4.end());
-#     cv::Mat quad4_mat(quad4_int,cv::CV_8UC1);
-#     cv::Mat e4;
-#     cv::Canny(quad4_mat,e4,l4,u4);
-#
-#     // Stitch the edges together
-#     int new_rows = std::max(e1.rows+e3.rows,e2.rows+r4.rows);
-#     int new_cols = std::max(e1.cols+e2.cols,e3.cols+e4.cols);
-#     edges_mask = cv::zeros(new_rows, new_cols, cv::CV_8UC1);
-#
-#     e1.copyTo(edges_mask(cv::Rect(0,0,e1.cols,e1.rows)));
-#     e2.copyTo(edges_mask(cv::Rect(e1.cols,0,e2.cols,e2.rows)));
-#     e3.copyTo(edges_mask(cv::Rect(0,e1.rows,e3.cols,e3.rows)));
-#     e4.copyTo(edges_mask(cv::Rect(e1.cols,e1.rows,e4.cols,e4.rows)));
-#
-#     cv::bitwise_not(edges_mask,edges_mask_inv);
-#
-#     return std::make_pair(edges_mask, edges_mask_inv);
-# }

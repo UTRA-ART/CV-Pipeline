@@ -1,5 +1,6 @@
 from torch.utils.data import Dataset
 import cv2
+import torch
 
 
 class LaneDataset(Dataset):
