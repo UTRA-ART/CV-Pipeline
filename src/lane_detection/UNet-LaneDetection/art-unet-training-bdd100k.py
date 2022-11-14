@@ -385,13 +385,13 @@ for folder in os.listdir(base_path):
                 for filename in os.listdir(base_path+"/"+folder):
                     maskPaths = maskPaths + [base_path+"/"+folder+"/"+filename]
 
-# for folder in os.listdir(additional_path):
-#     if os.path.isdir(additional_path+"/"+folder):
-#         if folder == "inputs":
-#             for filename in os.listdir(additional_path+"/"+folder):
-#                 imagePaths = imagePaths + [additional_path+"/"+folder+"/"+filename]
-#                 mask_name = filename.split(".")[0]+"_Label.png"
-#                 maskPaths = maskPaths + [additional_path+"/labels/"+mask_name]
+for folder in os.listdir(additional_path):
+    if os.path.isdir(additional_path+"/"+folder):
+        if folder == "inputs":
+            for filename in os.listdir(additional_path+"/"+folder):
+                imagePaths = imagePaths + [additional_path+"/"+folder+"/"+filename]
+                mask_name = filename.split(".")[0]+"_Label.png"
+                maskPaths = maskPaths + [additional_path+"/labels/"+mask_name]
 
 # for i in range(3075):
 #     if i > 2075:
@@ -502,7 +502,7 @@ if torch.cuda.is_available():
     print('Using CUDA.')
     device = torch.device('cuda')
 model = UNet()
-model.load_state_dict(torch.load("runs/1667858396.2884016/1667858396.2884016unet_gray_model_batch64_sheduled_lr0.1_last.pt"))
+model.load_state_dict(torch.load("runs/1667872806.510513/1667872806.510513unet_gray_model_batch64_sheduled_lr0.1_last.pt"))
 
 if torch.cuda.is_available():
     model.cuda()
