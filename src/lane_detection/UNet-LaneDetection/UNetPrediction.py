@@ -13,8 +13,10 @@ import onnxruntime as ort
 video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 # video_path = "/Users/jasonyuan/Desktop/Section_of_dashcam.mp4"
 save_path = "output/"
-image_path = "C:/Users/ammar/Documents/CodingProjects/ART/CV-Pipeline/src/lane_detection/UNet-LaneDetection/input/additional-data/inputs/Gravel_2.png"
-weights_path = 'runs/1667872806.510513/1667872806.510513unet_gray_model_batch64_sheduled_lr0.1_last.pt'
+# image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs"
+image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
+
+weights_path = 'runs/1668151763.9445446/1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt'
 
 
 def find_edge_channel2(img):
@@ -120,13 +122,14 @@ def predict_lanes(frame, unet):
     input = input.to(device="cuda")
     unet = unet.to(device="cuda")
 
-    frames = 100
-    t1 = time.time()
+    times = []
+    frames = 1
     for i in range(0, frames):
+        t1 = time.time()
         output = unet(input)
-
-    t2 = time.time()
-    print(f'Done. Inference @ {frames / (t2 - t1)} fps ')
+        t2 = time.time()
+        times.append(t2 - t1)
+    print(f'Done. Inference @ {1 / np.mean(times)} fps ')
 
     # print(output)
     # print(unet)
@@ -178,23 +181,46 @@ if __name__ == "__main__":
                    )
     )
 
-    frame = cv2.imread(
-        image_path
-    )
 
-    annotated, pred = predict_lanes(frame, unet)
-    h, w = frame.shape[0:2]
-    print(frame.shape)
-    annotated = cv2.resize(annotated, (w, h))
-    pred = cv2.resize(pred, (w, h))
+    
+    out = cv2.VideoWriter('competition.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (640, 360))
+    img_dir = False
+    if img_dir:
 
-    filename = image_path.split('/')[-1]
-    cv2.imwrite(save_path+filename, annotated)
+        for img_file in os.listdir(image_path):
+            
+            frame = cv2.imread(
+                os.path.join(image_path, img_file)
+            )
+            print((frame.shape[0], frame.shape[1]))
+            annotated, pred = predict_lanes(frame, unet)
+            h, w = frame.shape[0:2]
+            print(frame.shape)
+            annotated = cv2.resize(annotated, (w, h))
+            pred = cv2.resize(pred, (w, h))
 
-    cv2.imshow("Annotated", annotated)
-    cv2.imshow("Og", frame)
-    cv2.imshow("Pred", pred)
-    cv2.waitKey(0)
+            # filename = image_path.split('/')[-1]
+            # cv2.imwrite(save_path+filename, annotated)
+
+            out.write(annotated)
+
+        out.release()
+    else:
+
+        frame = cv2.imread(image_path)
+        print((frame.shape[0], frame.shape[1]))
+        annotated, pred = predict_lanes(frame, unet)
+        h, w = frame.shape[0:2]
+        print(frame.shape)
+        annotated = cv2.resize(annotated, (w, h))
+        pred = cv2.resize(pred, (w, h))
+
+        filename = image_path.split('/')[-1]
+        cv2.imwrite(save_path+filename, annotated)
+        cv2.imshow("Annotated", annotated)
+        cv2.imshow("Og", frame)
+        cv2.imshow("Pred", pred)
+        cv2.waitKey(0)
 
     # out = cv2.VideoWriter('/Users/jasonyuan/Desktop/Processed_Lane_vid_2.mp4',cv2.VideoWriter_fourcc(*'mp4v'), 10, (640,360))
     #
