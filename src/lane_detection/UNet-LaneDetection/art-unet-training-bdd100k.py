@@ -347,14 +347,14 @@ def label_func(fn):
 # ----------------- Collect all the file names into two lists ------------------
 
 base_path = "input/unet-lanes-v3/Dataset 3"
-additional_path = "input/additional-data"
+additional_path = "input/tusimple_unet_v2"
 
 imagePaths = []
 maskPaths = []
 
 validPaths = []
 valid_lblPaths = []
-
+'''
 for folder in os.listdir(base_path):
     if os.path.isdir(base_path+"/"+folder):
         if folder == "Modified Carla":
@@ -384,13 +384,15 @@ for folder in os.listdir(base_path):
             elif folder == "labels":
                 for filename in os.listdir(base_path+"/"+folder):
                     maskPaths = maskPaths + [base_path+"/"+folder+"/"+filename]
+                    '''
 
 for folder in os.listdir(additional_path):
     if os.path.isdir(additional_path+"/"+folder):
         if folder == "inputs":
             for filename in os.listdir(additional_path+"/"+folder):
                 imagePaths = imagePaths + [additional_path+"/"+folder+"/"+filename]
-                mask_name = filename.split(".")[0]+"_Label.png"
+                # mask_name = filename.split(".")[0]+"_Label.png"
+                mask_name = filename
                 maskPaths = maskPaths + [additional_path+"/labels/"+mask_name]
 
 # for i in range(3075):
@@ -488,7 +490,7 @@ print('made dir')
 
 config.l_rate = 0.1
 config.momentum = 0.9
-num_epochs = 40   # Start smaller to actually make sure that the model is not overfitting due to data similarities
+num_epochs = 80   # Start smaller to actually make sure that the model is not overfitting due to data similarities
 
 train_loss = []
 train_error = []
@@ -502,7 +504,7 @@ if torch.cuda.is_available():
     print('Using CUDA.')
     device = torch.device('cuda')
 model = UNet()
-model.load_state_dict(torch.load("runs/1667872806.510513/1667872806.510513unet_gray_model_batch64_sheduled_lr0.1_last.pt"))
+# model.load_state_dict(torch.load("runs/1667872806.510513/1667872806.510513unet_gray_model_batch64_sheduled_lr0.1_last.pt"))
 
 if torch.cuda.is_available():
     model.cuda()

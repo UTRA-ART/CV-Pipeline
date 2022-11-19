@@ -14,9 +14,17 @@ video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 # video_path = "/Users/jasonyuan/Desktop/Section_of_dashcam.mp4"
 save_path = "output/"
 # image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs"
-image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
+# image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
+# image_path = r"input\unet-lanes-v3\Dataset 3\Day Time\inputs"
+# image_path = r"C:\Users\ammar\Documents\CodingProjects\ART\Data\LaneDataForPothole\Toronto Dashcam video_0"
+# image_path = r'input\lanes4.jpg'
+# image_path = r"input\unet-lanes-v3\Dataset 3\Past Comp Data\inputs\Lane_Input_1054.png"
+image_path = r'input\tusimple_unet_v2\inputs\35.jpg'
 
-weights_path = 'runs/1668151763.9445446/1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt'
+img_dir = False
+
+# weights_path = 'runs/1668151763.9445446/1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt'
+weights_path = r"runs\1668662675.3081253\1668662675.3081253unet_gray_model_batch64_sheduled_lr0.1_last.pt"
 
 
 def find_edge_channel2(img):
@@ -181,14 +189,13 @@ if __name__ == "__main__":
                    )
     )
 
-
+    count = 0
     
-    out = cv2.VideoWriter('competition.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (640, 360))
-    img_dir = False
+    out = cv2.VideoWriter('daytime_tusimple.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (1280, 720))
     if img_dir:
 
         for img_file in os.listdir(image_path):
-            
+            if count == 200: break
             frame = cv2.imread(
                 os.path.join(image_path, img_file)
             )
@@ -203,6 +210,7 @@ if __name__ == "__main__":
             # cv2.imwrite(save_path+filename, annotated)
 
             out.write(annotated)
+            count += 1
 
         out.release()
     else:
