@@ -14,17 +14,18 @@ video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 # video_path = "/Users/jasonyuan/Desktop/Section_of_dashcam.mp4"
 save_path = "output/"
 # image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs"
-# image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
+image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
 # image_path = r"input\unet-lanes-v3\Dataset 3\Day Time\inputs"
 # image_path = r"C:\Users\ammar\Documents\CodingProjects\ART\Data\LaneDataForPothole\Toronto Dashcam video_0"
 # image_path = r'input\lanes4.jpg'
 # image_path = r"input\unet-lanes-v3\Dataset 3\Past Comp Data\inputs\Lane_Input_1054.png"
-image_path = r'input\tusimple_unet_v2\inputs\35.jpg'
+# image_path = r'input\tusimple_unet_v2\inputs\35.jpg'
 
 img_dir = False
 
 # weights_path = 'runs/1668151763.9445446/1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt'
-weights_path = r"runs\1668662675.3081253\1668662675.3081253unet_gray_model_batch64_sheduled_lr0.1_last.pt"
+# weights_path = r"runs\1668662675.3081253\1668662675.3081253unet_gray_model_batch64_sheduled_lr0.1_last.pt"
+weights_path = r"C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\UNet-LaneDetection\runs\1668886756.1157043\1668886756.1157043unet_gray_model_batch64_sheduled_lr0.1_last.pt"
 
 
 def find_edge_channel2(img):
@@ -82,7 +83,7 @@ def find_edge_channel(img):
     return edges_mask, edges_mask_inv
 
 
-def predict_lanes(frame, unet):
+def predict_lanes(frame, unet, ort_session):
     frame = cv2.resize(frame, (1280, 720), interpolation=cv2.INTER_AREA)
     # roi2,M2,M_inv2 = define_region_of_interest(frame)
     frame_copy = np.copy(frame)
@@ -93,7 +94,8 @@ def predict_lanes(frame, unet):
     # roi = roi/255.
     # input = torch.Tensor(roi)
     gray = cv2.cvtColor(frame_copy, cv2.COLOR_BGR2GRAY)
-    gradient_map = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=-1) # Gradient map along x
+    blur = cv2.GaussianBlur(gray, (9, 9), 0)
+    gradient_map = cv2.Sobel(blur, cv2.CV_64F, 1, 0, ksize=-1) # Gradient map along x
     #         gradient_map = cv2.Laplacian(gray, cv2.CV_64F)
     gradient_map = np.uint8(np.absolute(gradient_map))
     test_edges, test_edges_inv = find_edge_channel(frame_copy)
@@ -114,6 +116,7 @@ def predict_lanes(frame, unet):
     frame_copy[:,:,1] = test_edges
     frame_copy[:,:,2] = test_edges_inv
     frame_copy[:,:,3] = gradient_map
+    cv2.imwrite('gradient.png', frame_copy[:, :, 3])
     frame_copy = cv2.resize(frame_copy, (256, 160))
 
     input = torch.Tensor((frame_copy / 255.0).transpose(2, 0, 1)).reshape(
@@ -125,32 +128,34 @@ def predict_lanes(frame, unet):
     # ort_sess = ort.InferenceSession('/Users/jasonyuan/Desktop/unet_with_sigmoid.onnx')
     # output = ort_sess.run(None, {'Inputs': x})[0]
 
-    unet.eval()
+    # unet.eval()
 
     input = input.to(device="cuda")
-    unet = unet.to(device="cuda")
+    # unet = unet.to(device="cuda")
 
     times = []
-    frames = 1
+    frames = 100
     for i in range(0, frames):
         t1 = time.time()
-        output = unet(input)
+        # output = unet(input)
+        output = ort_session.run(None, {'Inputs': input.cpu().numpy()})[0][0][0]
         t2 = time.time()
         times.append(t2 - t1)
     print(f'Done. Inference @ {1 / np.mean(times)} fps ')
 
     # print(output)
     # print(unet)
-
+    print(output.shape)
+    output = torch.tensor(output)
     output = torch.sigmoid(output)
     output = output.detach().cpu().numpy()
-    pred_mask = np.where(output > 0.5, 1, 0)
+    pred_mask = np.where(output > 0.5, 1, 0).astype("float32")
 
     # print(output)
     # print(ground_truth.shape)
     # print(pred_mask.size())
-    pred_mask = (pred_mask.squeeze(0)).transpose(
-        1, 2, 0).squeeze().astype("float32")
+    # pred_mask = (pred_mask.squeeze(0)).transpose(
+    #     1, 2, 0).squeeze().astype("float32")
     # pred_mask = cv2.resize(pred_mask,(1280,720),interpolation=cv2.INTER_AREA)
 
     overlayed_mask = np.copy(cv2.resize(frame, (256, 160)))
@@ -189,6 +194,10 @@ if __name__ == "__main__":
                    )
     )
 
+    model = onnx.load('unet_v1.onnx')
+    onnx.checker.check_model(model)
+    ort_session = ort.InferenceSession('unet_v1.onnx', providers=['CUDAExecutionProvider'])
+    print(ort.get_device())
     count = 0
     
     out = cv2.VideoWriter('daytime_tusimple.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (1280, 720))
@@ -200,7 +209,7 @@ if __name__ == "__main__":
                 os.path.join(image_path, img_file)
             )
             print((frame.shape[0], frame.shape[1]))
-            annotated, pred = predict_lanes(frame, unet)
+            annotated, pred = predict_lanes(frame, unet, ort_session)
             h, w = frame.shape[0:2]
             print(frame.shape)
             annotated = cv2.resize(annotated, (w, h))
@@ -217,7 +226,7 @@ if __name__ == "__main__":
 
         frame = cv2.imread(image_path)
         print((frame.shape[0], frame.shape[1]))
-        annotated, pred = predict_lanes(frame, unet)
+        annotated, pred = predict_lanes(frame, unet, ort_session)
         h, w = frame.shape[0:2]
         print(frame.shape)
         annotated = cv2.resize(annotated, (w, h))

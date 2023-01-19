@@ -88,3 +88,28 @@ def test():
     model = UNet(in_channels=2, out_channels=1)
     pred = model(x)
     print(x.shape, pred.shape)
+
+
+if __name__ == "__main__":
+    weight_pth = r"C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\UNet-LaneDetection\runs\1668151763.9445446\1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt"
+
+    model = UNet()
+    model.load_state_dict(torch.load(
+        weight_pth, map_location=torch.device("cpu")))
+    # model.to("cpu")
+    model.eval()
+    dummy_input = torch.ones(1, 4, 160, 256, device="cpu")
+
+    out = model(dummy_input)
+    print(out.shape)
+    print(out)
+
+    torch.onnx.export(model,
+                     dummy_input,
+                     "unet_v1.onnx",
+                     opset_version=11,
+                     do_constant_folding=True,
+                     input_names=["Inputs"],
+                     output_names=["Outputs"])
+    
+    print("Onnx conversion complete")

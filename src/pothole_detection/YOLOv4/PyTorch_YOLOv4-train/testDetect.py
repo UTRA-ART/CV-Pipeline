@@ -2,7 +2,7 @@ import os
 
 input_directory = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\pothole_detection\\YOLOv4\\PyTorch_YOLOv4-train\\inference\\test3"
 
-command = 'python detect.py --weights "runs/train/exp125/weights/best.pt" --output "inference/output_test2/" --source '
+command = 'python detect.py --weights "best.pt" --output "inference/output_test2/" --source '
 
 for filename in os.listdir(input_directory):
     f = os.path.join(input_directory, filename)
