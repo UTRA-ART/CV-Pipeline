@@ -35,6 +35,24 @@ def noisy(noise_typ,image):
         noisy = image + image * gauss
         return noisy
 
+# obtain perspective transform matrix
+# len = img.shape[0]
+# wid = img.shape[1]
+length = 720
+width = 1280
+new_len = length/3
+new_wid = width/3
+
+pt1 = np.array([[new_wid,new_len],[width - new_wid,new_len],[width,length],[0,length]])
+pt1 = np.array([i.astype(np.float32) for i in pt1])
+
+pt2 = np.array([[0,0],[width,0],[width,length],[0,length]])
+pt2 = np.array([i.astype(np.float32) for i in pt2])
+
+
+
+matrix = cv2.getPerspectiveTransform(pt1,pt2)
+
 json_gt = [json.loads(line) for line in open(name)]
 for n in range(len(json_gt)):
     gt = json_gt[n]
@@ -71,6 +89,7 @@ for n in range(len(json_gt)):
         cv2.drawContours(label, contours, by_x_sort[start_x], 1 * (num + 1), -1) # for numbered label
         # cv2.drawContours(label, contours, by_x_sort[start_x], 255, -1) # for pure white label
         num+=1
+    label = cv2.warpPerspective(label, matrix, (width, length), flags=cv2.INTER_LINEAR)
 
     alpha = 1
     beta = 2
@@ -100,6 +119,7 @@ for n in range(len(json_gt)):
 
     res = noisy("poisson", res/255)
     res = noisy("gauss", res)
+    res = cv2.warpPerspective(res, matrix, (width, length), flags=cv2.INTER_LINEAR)
 
     # add to branch cleanup_year23
     # CV-Pipeline/src/lane_detection
