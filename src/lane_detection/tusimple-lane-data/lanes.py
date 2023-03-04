@@ -4,8 +4,22 @@ import cv2
 import matplotlib.pyplot as plt
 import random
 import os
+import tqdm
 
-name = 'label_data_0313.json'
+base = r'C:\Users\ammar\Documents\CodingProjects\ART\Data\TuSimple\TUSimple\train_set'
+name = r'C:\Users\ammar\Documents\CodingProjects\ART\Data\TuSimple\TUSimple\train_set\label_data_0531.json'
+
+target_path = r'C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\unet-lane\UNet-LaneDetection\input\tusimple'
+
+try:
+    os.makedirs(os.path.join(target_path, "inputs"))
+except FileExistsError:
+    pass
+
+try:
+    os.makedirs(os.path.join(target_path, "labels"))
+except FileExistsError:
+    pass
 
 def show(image):
     cv2.imshow('image',image)
@@ -34,13 +48,14 @@ def noisy(noise_typ,image):
         gauss = gauss.reshape(row,col,ch)
         noisy = image + image * gauss
         return noisy
-
+count = 0
 json_gt = [json.loads(line) for line in open(name)]
-for n in range(len(json_gt)):
+for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
     gt = json_gt[n]
     gt_lanes = gt['lanes']
     y_samples = gt['h_samples']
     raw_file = gt['raw_file']
+    raw_file = os.path.join(base, raw_file)
     if not os.path.exists(raw_file):
         continue
     img = cv2.imread(raw_file)
@@ -104,17 +119,9 @@ for n in range(len(json_gt)):
     # add to branch cleanup_year23
     # CV-Pipeline/src/lane_detection
 
-    import os
+    count += 1
+    # tqdm.tqdm.write(os.path.join(target_path, "input/") + raw_file.split("/")[2]+".jpg", end='')
+    cv2.imwrite(os.path.join(target_path, "inputs/") + raw_file.split("/")[2]+".jpg", res * 255)
+    cv2.imwrite(os.path.join(target_path, "labels/") + raw_file.split("/")[2]+".jpg", label)
 
-    try:
-        os.makedirs("adjusted")
-    except FileExistsError:
-        pass
-
-    try:
-        os.makedirs("label")
-    except FileExistsError:
-        pass
-
-    cv2.imwrite("adjusted/" +raw_file.split("/")[2]+".jpg", res * 255)
-    cv2.imwrite("label/" + raw_file.split("/")[2]+".jpg", label)
+print(f'Number of images processed: {count}')

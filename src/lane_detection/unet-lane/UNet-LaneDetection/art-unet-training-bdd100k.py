@@ -30,12 +30,6 @@ import time
 import wandb
 
 
-# In[3]:
-
-
-torch.cuda.is_available()
-
-
 # # Defining the UNet model and the custom dataset class
 
 # In[12]:
@@ -67,26 +61,17 @@ class LaneDataset(Dataset):
 #         gradient_map = cv2.Laplacian(gray, cv2.CV_64F)
         gradient_map = np.uint8(np.absolute(gradient_map))
         
-        output_image = np.zeros((gray.shape[0],gray.shape[1],4),dtype=np.uint8)
+        output_image = np.zeros((gray.shape[0],gray.shape[1],3),dtype=np.uint8)
         output_image[:,:,0] = gray
         output_image[:,:,1] = edges
-        output_image[:,:,2] = edges_inv
-        output_image[:,:,3] = gradient_map
-        
-        if "Town" in mask_path:
-            output_image, mask = self.prob_rotate(output_image,mask)
-            output_image, mask = self.prob_flip(output_image,mask)
-#             mask = cv2.bitwise_or(cv2.bitwise_and(mask,edges),cv2.bitwise_and(mask,edges_inv))
+        output_image[:,:,2] = gradient_map
+    
+        output_image, mask = self.prob_rotate(output_image,mask)
+        output_image, mask = self.prob_flip(output_image,mask)
 
         if self.transforms != None:
             output_image = self.transforms(output_image)
-#             output_image = self.transforms(image)
-#             edges = self.transforms(edges)
-#             edges_inv = self.transforms(edges_inv)
             mask = self.transforms(mask)
-                
-#         output_image = torch.cat((output_image,edges),dim=0)
-#         output_image = torch.cat((output_image,edges_inv),dim=0)
         
         mask_binary = (mask>0).type(torch.float)
         
@@ -182,7 +167,7 @@ class ConvStage(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=4, out_channels=1, features=[16, 32, 64, 128]):
+    def __init__(self, in_channels=3, out_channels=1, features=[16, 32, 64, 128]):
         super(UNet, self).__init__()
 
         self.encoder = nn.ModuleList()
@@ -245,7 +230,7 @@ class UNet(nn.Module):
 
 
 def test():
-    x = torch.rand((3, 2, 160, 256))
+    x = torch.rand((3, 3, 160, 256))
     model = UNet(in_channels=2, out_channels=1)
     pred = model(x)
     print(x.shape, pred.shape)
@@ -340,79 +325,41 @@ def accuracy(model,dataloader):
 
     return total_correct/total_inputs
 
-def label_func(fn): 
-    return str(fn).replace(".png", "_label.png").replace("train", "train_label").replace("val/", "val_label/")
+
+
+def load_data(location):
+    dataPaths = []
+    labelPaths = []
+
+    for folder in os.listdir(location):
+        if os.path.isdir(location+"/"+folder):
+            if folder == "inputs":
+                for filename in os.listdir(location+"/"+folder):
+                    dataPaths = dataPaths + [location+"/"+folder+"/"+filename]
+                    # mask_name = filename.split(".")[0]+"_Label.png"
+                    mask_name = filename
+                    labelPaths = labelPaths + [location+"/labels/"+mask_name]
+    return dataPaths, labelPaths
 
 
 # ----------------- Collect all the file names into two lists ------------------
 
 base_path = "input/unet-lanes-v3/Dataset 3"
-additional_path = "input/tusimple_unet_v2"
+tusimple_path = "input/tusimple"
+competition_path = "input/additional-data"
+
 
 imagePaths = []
 maskPaths = []
 
 validPaths = []
 valid_lblPaths = []
-'''
-for folder in os.listdir(base_path):
-    if os.path.isdir(base_path+"/"+folder):
-        if folder == "Modified Carla":
-            continue
-        count = 0
-        for subdir in os.listdir(base_path+"/"+folder):
-            if subdir == "inputs":
-                for filename in os.listdir(base_path+"/"+folder+"/inputs"):
-                    if filename == ".DS_Store":
-                        continue
-                        
-                    if (folder == "Augmented"):
-                        if (count < 2945):
-                            imagePaths = imagePaths + [base_path+"/"+folder+"/inputs/"+filename]
-                            mask_name = filename.split("Input")[0] + "Label" + filename.split("Input")[1]
-                            maskPaths = maskPaths + [base_path+"/"+folder+"/labels/"+ mask_name]
-                        else:
-                            break
-#                     elif (count > len(os.listdir(base_path+"/"+folder+"/inputs"))//2) and (folder == "Modified Carla"):
-#                         validPaths = validPaths + [base_path+"/"+folder+"/inputs/"+filename]
-#                         valid_lblPaths = valid_lblPaths + [base_path+"/"+folder+"/labels/"+filename.split(".")[0]+"_Label.png"]
-                    else:    
-                        imagePaths = imagePaths + [base_path+"/"+folder+"/inputs/"+filename]
-                        maskPaths = maskPaths + [base_path+"/"+folder+"/labels/"+filename.split(".")[0]+"_Label.png"]
-                    count += 1
-                    
-            elif folder == "labels":
-                for filename in os.listdir(base_path+"/"+folder):
-                    maskPaths = maskPaths + [base_path+"/"+folder+"/"+filename]
-                    '''
 
-for folder in os.listdir(additional_path):
-    if os.path.isdir(additional_path+"/"+folder):
-        if folder == "inputs":
-            for filename in os.listdir(additional_path+"/"+folder):
-                imagePaths = imagePaths + [additional_path+"/"+folder+"/"+filename]
-                # mask_name = filename.split(".")[0]+"_Label.png"
-                mask_name = filename
-                maskPaths = maskPaths + [additional_path+"/labels/"+mask_name]
+imagePaths, maskPaths =load_data(tusimple_path)
+# load_data(imagePaths, maskPaths, competition_path)
 
-# for i in range(3075):
-#     if i > 2075:
-#         imagePaths = imagePaths + ["../input/lane-detection-for-carla-driving-simulator/train"+"/"+os.listdir("../input/lane-detection-for-carla-driving-simulator/train")[i]]
-#         maskPaths = maskPaths + [label_func("../input/lane-detection-for-carla-driving-simulator/train"+"/"+os.listdir("../input/lane-detection-for-carla-driving-simulator/train")[i])]
-#     else:
-#         validPaths = validPaths + ["../input/lane-detection-for-carla-driving-simulator/train"+"/"+os.listdir("../input/lane-detection-for-carla-driving-simulator/train")[i]]
-#         valid_lblPaths = valid_lblPaths + [label_func("../input/lane-detection-for-carla-driving-simulator/train"+"/"+os.listdir("../input/lane-detection-for-carla-driving-simulator/train")[i])]  
-
-# for file in os.listdir("../input/lane-detection-for-carla-driving-simulator/val"):
-#     if file == ".DS_Store":
-#         continue
-        
-#     validPaths = validPaths + ["../input/lane-detection-for-carla-driving-simulator/val/"+file]
-#     valid_lblPaths = valid_lblPaths + ["../input/lane-detection-for-carla-driving-simulator/val_label/"+file.split(".")[0]+"_label.png"]   
     
 print(len(imagePaths),len(maskPaths))
-# imagePaths = sorted(imagePaths)
-# maskPaths = sorted(maskPaths)
 
 # ------------- Instantiate the custom dataset and dataloaders -----------------
 # Do an 85% - 15% split of the images for training and validation
@@ -461,23 +408,6 @@ trainloader = DataLoader(trainset,
 validloader = DataLoader(validset,
                         batch_size=batch,
                         num_workers=0)
-         
-
-
-# In[10]:
-
-
-# 
-
-
-# In[25]:
-
-
-# print(imagePaths[40])
-# print(maskPaths[40])
-
-
-# In[39]:
 
 
 # ---------------------- Initialize the training loop --------------------------
@@ -486,11 +416,10 @@ wandb.init(project='unet_shrinking', name=f'{timeStarted}')
 config = wandb.config
 
 os.mkdir(f'./runs/{timeStarted}/')
-print('made dir')
 
 config.l_rate = 0.1
 config.momentum = 0.9
-num_epochs = 80   # Start smaller to actually make sure that the model is not overfitting due to data similarities
+num_epochs = 40   # Start smaller to actually make sure that the model is not overfitting due to data similarities
 
 train_loss = []
 train_error = []
@@ -631,9 +560,9 @@ for e in range(num_epochs):
     
     if (val_loss[-1] < min_loss) and (e > 4) or e == (num_epochs - 1):
         print("Saved epoch {}".format(e+1))
-        torch.save(model.state_dict(),f"./runs/{timeStarted}/{timeStarted}unet_gray_model_batch{batch}_sheduled_lr{config.l_rate}_epochs{e}.pt")
+        torch.save(model.state_dict(),f"./runs/{timeStarted}/{timeStarted}unet_3c_model_batch{batch}_sheduled_lr{config.l_rate}_epochs{e}.pt")
         min_loss = val_loss[-1]
-    torch.save(model.state_dict(),f"./runs/{timeStarted}/{timeStarted}unet_gray_model_batch{batch}_sheduled_lr{config.l_rate}_last.pt")
+    torch.save(model.state_dict(),f"./runs/{timeStarted}/{timeStarted}unet_3c_model_batch{batch}_sheduled_lr{config.l_rate}_last.pt")
     wandb.log({'train_err': train_error[-1], 'train_loss': train_loss[-1], 'val_err': val_error[-1], 'val_loss': val_loss[-1]})
     with open(f'./runs/{timeStarted}/training_info.txt', 'a') as f:
         f.write(f'{e} {train_error[-1]} {train_loss[-1]} {val_error[-1]} {val_loss[-1]}\n') # (epoch) (train error) (train loss) (val error) (val loss)

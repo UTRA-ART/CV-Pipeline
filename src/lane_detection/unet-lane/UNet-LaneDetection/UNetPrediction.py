@@ -14,19 +14,20 @@ video_path = "/Users/jasonyuan/Desktop/output_video.mp4"
 # video_path = "/Users/jasonyuan/Desktop/Section_of_dashcam.mp4"
 save_path = "output/"
 # image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs"
-image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
+# image_path = "C:\\Users\\ammar\\Documents\\CodingProjects\\ART\\CV-Pipeline\\src\\lane_detection\\UNet-LaneDetection\\input\\additional-data\\inputs\\Gravel_10.png"
 # image_path = r"input\unet-lanes-v3\Dataset 3\Day Time\inputs"
 # image_path = r"C:\Users\ammar\Documents\CodingProjects\ART\Data\LaneDataForPothole\Toronto Dashcam video_0"
 # image_path = r'input\lanes4.jpg'
 # image_path = r"input\unet-lanes-v3\Dataset 3\Past Comp Data\inputs\Lane_Input_1054.png"
 # image_path = r'input\tusimple_unet_v2\inputs\35.jpg'
+image_path = r"C:\Users\ammar\Documents\CodingProjects\ART\CompetitionLaneLines2022\CompetitionLaneLines2022\data"
 
-img_dir = False
+img_dir = True
 
 # weights_path = 'runs/1668151763.9445446/1668151763.9445446unet_gray_model_batch64_sheduled_lr0.1_epochs15.pt'
 # weights_path = r"runs\1668662675.3081253\1668662675.3081253unet_gray_model_batch64_sheduled_lr0.1_last.pt"
-weights_path = r"C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\UNet-LaneDetection\runs\1668886756.1157043\1668886756.1157043unet_gray_model_batch64_sheduled_lr0.1_last.pt"
-
+# weights_path = r"C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\unet-lane\UNet-LaneDetection\runs\1668886756.1157043\1668886756.1157043unet_gray_model_batch64_sheduled_lr0.1_last.pt"
+weights_path = r'C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\unet-lane\UNet-LaneDetection\runs\1676224345.102315\1676224345.102315unet_3c_model_batch64_sheduled_lr0.1_last.pt'
 
 def find_edge_channel2(img):
 
@@ -111,16 +112,16 @@ def predict_lanes(frame, unet, ort_session):
     #     axis=2,
     # )
 
-    frame_copy = np.zeros((gray.shape[0],gray.shape[1],4),dtype=np.uint8)
+    frame_copy = np.zeros((gray.shape[0],gray.shape[1],3),dtype=np.uint8)
     frame_copy[:,:,0] = gray
     frame_copy[:,:,1] = test_edges
-    frame_copy[:,:,2] = test_edges_inv
-    frame_copy[:,:,3] = gradient_map
-    cv2.imwrite('gradient.png', frame_copy[:, :, 3])
+    # frame_copy[:,:,2] = test_edges_inv
+    frame_copy[:,:,2] = gradient_map
+    cv2.imwrite('gradient.png', frame_copy[:, :, 2])
     frame_copy = cv2.resize(frame_copy, (256, 160))
 
     input = torch.Tensor((frame_copy / 255.0).transpose(2, 0, 1)).reshape(
-        1, 4, 160, 256
+        1, 3, 160, 256
     )
     # x = (frame_copy/255.).transpose(2,0,1).reshape(1,5,180,330).astype(np.float32)
 
@@ -128,17 +129,17 @@ def predict_lanes(frame, unet, ort_session):
     # ort_sess = ort.InferenceSession('/Users/jasonyuan/Desktop/unet_with_sigmoid.onnx')
     # output = ort_sess.run(None, {'Inputs': x})[0]
 
-    # unet.eval()
+    unet.eval()
 
     input = input.to(device="cuda")
-    # unet = unet.to(device="cuda")
+    unet = unet.to(device="cuda")
 
     times = []
-    frames = 100
+    frames = 1
     for i in range(0, frames):
         t1 = time.time()
-        # output = unet(input)
-        output = ort_session.run(None, {'Inputs': input.cpu().numpy()})[0][0][0]
+        output = unet(input)[0][0]
+        # output = ort_session.run(None, {'Inputs': input.cpu().numpy()})[0][0][0]
         t2 = time.time()
         times.append(t2 - t1)
     print(f'Done. Inference @ {1 / np.mean(times)} fps ')
@@ -150,7 +151,7 @@ def predict_lanes(frame, unet, ort_session):
     output = torch.sigmoid(output)
     output = output.detach().cpu().numpy()
     pred_mask = np.where(output > 0.5, 1, 0).astype("float32")
-
+    print(np.any(pred_mask))
     # print(output)
     # print(ground_truth.shape)
     # print(pred_mask.size())
@@ -200,7 +201,7 @@ if __name__ == "__main__":
     print(ort.get_device())
     count = 0
     
-    out = cv2.VideoWriter('daytime_tusimple.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (1280, 720))
+    out = cv2.VideoWriter('competition_ordered_tusimple.mp4', cv2.VideoWriter_fourcc('m', 'p', '4', 'v'), 5, (640, 360))
     if img_dir:
 
         for img_file in os.listdir(image_path):
@@ -217,7 +218,8 @@ if __name__ == "__main__":
 
             # filename = image_path.split('/')[-1]
             # cv2.imwrite(save_path+filename, annotated)
-
+            # cv2.imshow('test', pred*255)
+            # cv2.waitKey(0)
             out.write(annotated)
             count += 1
 
@@ -231,6 +233,7 @@ if __name__ == "__main__":
         print(frame.shape)
         annotated = cv2.resize(annotated, (w, h))
         pred = cv2.resize(pred, (w, h))
+        print(pred.shape)
 
         filename = image_path.split('/')[-1]
         cv2.imwrite(save_path+filename, annotated)

@@ -21,7 +21,7 @@ class ConvStage(nn.Module):
 
 
 class UNet(nn.Module):
-    def __init__(self, in_channels=4, out_channels=1, features=[16, 32, 64, 128]):
+    def __init__(self, in_channels=3, out_channels=1, features=[16, 32, 64, 128]):
         super(UNet, self).__init__()
 
         self.encoder = nn.ModuleList()
