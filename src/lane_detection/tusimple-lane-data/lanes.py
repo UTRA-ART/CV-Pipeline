@@ -6,10 +6,10 @@ import random
 import os
 import tqdm
 
-base = r'C:\Users\ammar\Documents\CodingProjects\ART\Data\TuSimple\TUSimple\train_set'
-name = r'C:\Users\ammar\Documents\CodingProjects\ART\Data\TuSimple\TUSimple\train_set\label_data_0531.json'
+base = r'D:\UTRA\TUSimple\train_set'
+name = r'D:\UTRA\TUSimple\train_set\label_data_0531.json'
 
-target_path = r'C:\Users\ammar\Documents\CodingProjects\ART\CV-Pipeline\src\lane_detection\unet-lane\UNet-LaneDetection\input\tusimple'
+target_path = r'D:\UTRA\UNet dataset'
 
 try:
     os.makedirs(os.path.join(target_path, "inputs"))
@@ -91,7 +91,7 @@ for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
         cv2.polylines(label, np.int32([gt_lanes_vis[i]]), isClosed=False, color=(255,255,255), thickness = 7)
 
     label = cv2.cvtColor(label.astype(np.uint8), cv2.COLOR_BGR2GRAY)
-    contours, hierarchy = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    _, contours, hierarchy = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     by_x = {}  # position info for segments with starting x position as key
     for i in range(len(contours)):
