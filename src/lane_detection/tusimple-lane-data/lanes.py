@@ -4,8 +4,8 @@ import cv2
 import matplotlib.pyplot as plt
 import random
 import os
-import tqdm
 
+<<<<<<< HEAD
 base = r'D:\UTRA\TUSimple\train_set'
 name = r'D:\UTRA\TUSimple\train_set\label_data_0531.json'
 
@@ -20,6 +20,9 @@ try:
     os.makedirs(os.path.join(target_path, "labels"))
 except FileExistsError:
     pass
+=======
+name = 'label_data_0313.json'
+>>>>>>> 8fe1ea7a05900c6a5d8382729396daa76eb95b65
 
 def show(image):
     cv2.imshow('image',image)
@@ -48,33 +51,33 @@ def noisy(noise_typ,image):
         gauss = gauss.reshape(row,col,ch)
         noisy = image + image * gauss
         return noisy
-count = 0
 
 # obtain perspective transform matrix
 # len = img.shape[0]
 # wid = img.shape[1]
 length = 720
 width = 1280
-new_len = length/3
-new_wid = width/3
+new_len = int(length/3.5)
+new_wid = int(width/4.2)
 
-pt1 = np.array([[new_wid,new_len],[width - new_wid,new_len],[width,length],[0,length]])
-pt1 = np.array([i.astype(np.float32) for i in pt1])
+pts1 = np.array([[new_wid, new_len],
+                [width - new_wid, new_len],
+                [int(width / 2), length]])
+pts1 = np.array([i.astype(np.float32) for i in pts1])
 
-pt2 = np.array([[0,0],[width,0],[width,length],[0,length]])
-pt2 = np.array([i.astype(np.float32) for i in pt2])
+pts2 = np.array([[0, 0],
+                [width, 0],
+                [int(width / 2), length]])
+pts2 = np.array([i.astype(np.float32) for i in pts2])
 
-
-
-matrix = cv2.getPerspectiveTransform(pt1,pt2)
+matrix = cv2.getAffineTransform(pts1, pts2)
 
 json_gt = [json.loads(line) for line in open(name)]
-for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
+for n in range(len(json_gt)):
     gt = json_gt[n]
     gt_lanes = gt['lanes']
     y_samples = gt['h_samples']
     raw_file = gt['raw_file']
-    raw_file = os.path.join(base, raw_file)
     if not os.path.exists(raw_file):
         continue
     img = cv2.imread(raw_file)
@@ -87,8 +90,8 @@ for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
     label = np.zeros(np.shape(img))
     alpha = 0.9
     for i in range(len(gt_lanes_vis)):
-        cv2.polylines(overlay, np.int32([gt_lanes_vis[i]]), isClosed=False, color=(250, 249, 246), thickness = 7)
-        cv2.polylines(label, np.int32([gt_lanes_vis[i]]), isClosed=False, color=(255,255,255), thickness = 7)
+        cv2.polylines(overlay, np.int32([gt_lanes_vis[i]]), isClosed=False, color=(250, 249, 246), thickness = 10)
+        cv2.polylines(label, np.int32([gt_lanes_vis[i]]), isClosed=False, color=(255,255,255), thickness = 10)
 
     label = cv2.cvtColor(label.astype(np.uint8), cv2.COLOR_BGR2GRAY)
     _, contours, hierarchy = cv2.findContours(label, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -102,10 +105,10 @@ for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
 
     num =0
     for start_x in by_x_sort:
-        cv2.drawContours(label, contours, by_x_sort[start_x], 1 * (num + 1), -1) # for numbered label
-        # cv2.drawContours(label, contours, by_x_sort[start_x], 255, -1) # for pure white label
+        # cv2.drawContours(label, contours, by_x_sort[start_x], 1 * (num + 1), -1) # for numbered label
+        cv2.drawContours(label, contours, by_x_sort[start_x], 255, -1) # for pure white label
         num+=1
-    label = cv2.warpPerspective(label, matrix, (width, length), flags=cv2.INTER_LINEAR)
+    label = cv2.warpAffine(label,matrix, (width, length))
 
     alpha = 1
     beta = 2
@@ -135,14 +138,22 @@ for n in tqdm.tqdm(range(len(json_gt)), position=0, leave=False):
 
     res = noisy("poisson", res/255)
     res = noisy("gauss", res)
-    res = cv2.warpPerspective(res, matrix, (width, length), flags=cv2.INTER_LINEAR)
+    res = cv2.warpAffine(res,matrix, (width, length))
 
     # add to branch cleanup_year23
     # CV-Pipeline/src/lane_detection
 
-    count += 1
-    # tqdm.tqdm.write(os.path.join(target_path, "input/") + raw_file.split("/")[2]+".jpg", end='')
-    cv2.imwrite(os.path.join(target_path, "inputs/") + raw_file.split("/")[2]+".jpg", res * 255)
-    cv2.imwrite(os.path.join(target_path, "labels/") + raw_file.split("/")[2]+".jpg", label)
+    import os
 
-print(f'Number of images processed: {count}')
+    try:
+        os.makedirs("adjusted")
+    except FileExistsError:
+        pass
+
+    try:
+        os.makedirs("label")
+    except FileExistsError:
+        pass
+
+    cv2.imwrite("adjusted/" +raw_file.split("/")[2]+".jpg", res * 255)
+    cv2.imwrite("label/" + raw_file.split("/")[2]+".jpg", label)
