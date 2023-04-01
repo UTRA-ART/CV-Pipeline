@@ -129,7 +129,7 @@ def labels_to_class_weights(labels, nc=80):
         return torch.Tensor()
 
     labels = np.concatenate(labels, 0)  # labels.shape = (866643, 5) for COCO
-    classes = labels[:, 0].astype(np.int)  # labels = [class xywh]
+    classes = labels[:, 0].astype(np.int64)  # labels = [class xywh]
     weights = np.bincount(classes, minlength=nc)  # occurrences per class
 
     # Prepend gridpoint count (for uCE training)
@@ -146,7 +146,7 @@ def labels_to_image_weights(labels, nc=80, class_weights=np.ones(80)):
     # Produces image weights based on class mAPs
     n = len(labels)
     class_counts = np.array(
-        [np.bincount(labels[i][:, 0].astype(np.int), minlength=nc) for i in range(n)]
+        [np.bincount(labels[i][:, 0].astype(np.int64), minlength=nc) for i in range(n)]
     )
     image_weights = (class_weights.reshape(1, nc) * class_counts).sum(1)
     # index = random.choices(range(n), weights=image_weights, k=1)  # weight image sample
@@ -459,7 +459,7 @@ def non_max_suppression(
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
             x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
-        print(f"{classes=}")
+        # print(f"{classes=}")
         # Filter by class
         if classes:
             x = x[(x[:, 5:6] == torch.tensor(classes, device=x.device)).any(1)]

@@ -22,7 +22,7 @@ from tqdm import tqdm
 
 import test  # import test.py to get mAP after each epoch
 
-# from models.yolo import Model
+#from models.yolo import Model
 from models.models import *
 from utils.autoanchor import check_anchors
 from utils.datasets import create_dataloader

@@ -514,7 +514,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.label_files = img2label_paths(cache.keys())  # update
 
         n = len(shapes)  # number of images
-        bi = np.floor(np.arange(n) / batch_size).astype(np.int)  # batch index
+        bi = np.floor(np.arange(n) / batch_size).astype(np.uint)  # batch index
         nb = bi[-1] + 1  # number of batches
         self.batch = bi  # batch index of image
         self.n = n
@@ -532,8 +532,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             ar = ar[irect]
 
             # Set training image shapes
-            shapes = [[1, 1]] * nb
-            for i in range(nb):
+            shapes = [[1, 1]] * int(nb)
+            for i in range(int(nb)):
                 ari = ar[bi == i]
                 mini, maxi = ari.min(), ari.max()
                 if maxi < 1:
@@ -542,7 +542,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                     shapes[i] = [1, 1 / mini]
 
             self.batch_shapes = (
-                np.ceil(np.array(shapes) * img_size / stride + pad).astype(np.int)
+                np.ceil(np.array(shapes) * img_size / stride + pad).astype(np.uint)
                 * stride
             )
 
@@ -605,7 +605,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                         b = x[1:] * [w, h, w, h]  # box
                         b[2:] = b[2:].max()  # rectangle to square
                         b[2:] = b[2:] * 1.3 + 30  # pad
-                        b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(np.int)
+                        b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(np.uint)
 
                         b[[0, 2]] = np.clip(
                             b[[0, 2]], 0, w
@@ -882,7 +882,7 @@ class LoadImagesAndLabels9(Dataset):  # for training/testing
         self.label_files = img2label_paths(cache.keys())  # update
 
         n = len(shapes)  # number of images
-        bi = np.floor(np.arange(n) / batch_size).astype(np.int)  # batch index
+        bi = np.floor(np.arange(n) / batch_size).astype(np.uint)  # batch index
         nb = bi[-1] + 1  # number of batches
         self.batch = bi  # batch index of image
         self.n = n
@@ -910,7 +910,7 @@ class LoadImagesAndLabels9(Dataset):  # for training/testing
                     shapes[i] = [1, 1 / mini]
 
             self.batch_shapes = (
-                np.ceil(np.array(shapes) * img_size / stride + pad).astype(np.int)
+                np.ceil(np.array(shapes) * img_size / stride + pad).astype(np.uint)
                 * stride
             )
 
@@ -973,7 +973,7 @@ class LoadImagesAndLabels9(Dataset):  # for training/testing
                         b = x[1:] * [w, h, w, h]  # box
                         b[2:] = b[2:].max()  # rectangle to square
                         b[2:] = b[2:] * 1.3 + 30  # pad
-                        b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(np.int)
+                        b = xywh2xyxy(b.reshape(-1, 4)).ravel().astype(np.uint)
 
                         b[[0, 2]] = np.clip(
                             b[[0, 2]], 0, w
@@ -1190,7 +1190,7 @@ def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
     hue, sat, val = cv2.split(cv2.cvtColor(img, cv2.COLOR_BGR2HSV))
     dtype = img.dtype  # uint8
 
-    x = np.arange(0, 256, dtype=np.int16)
+    x = np.arange(0, 256, dtype=np.uint16)
     lut_hue = ((x * r[0]) % 180).astype(dtype)
     lut_sat = np.clip(x * r[1], 0, 255).astype(dtype)
     lut_val = np.clip(x * r[2], 0, 255).astype(dtype)
