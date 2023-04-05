@@ -156,7 +156,6 @@ def detect(save_img=False):
 
                 # Write results
                 for *xyxy, conf, cls in det:
-                    print(save_txt)
                     if save_txt:  # Write to file
                         print(txt_path)
                         xywh = (

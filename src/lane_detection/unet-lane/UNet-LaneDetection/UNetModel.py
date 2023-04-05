@@ -78,7 +78,7 @@ class UNet(nn.Module):
         x5_pool = self.max_pool(x5)
         x6 = self.conv_down6(x5_pool)  # Output from sixth double conv
 
-        print(x6.shape)
+        # print(x6.shape)
         # Decoder
         # Decoder first layer
         x7 = self.upsample1(x6)
@@ -138,15 +138,15 @@ class UNet(nn.Module):
 
         if (width_img - 2 * delta_width) > width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width - 1
+                :, :, delta_height:height_img, delta_width: width_img - delta_width - 1
             ]
         elif (width_img - 2 * delta_width) < width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width - 1 : width_img - delta_width
+                :, :, delta_height:height_img, delta_width - 1: width_img - delta_width
             ]
         else:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width
+                :, :, delta_height:height_img, delta_width: width_img - delta_width
             ]
 
         return cropped_image
@@ -229,15 +229,15 @@ class UNet2(nn.Module):
 
         if (width_img - 2 * delta_width) > width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width - 1
+                :, :, delta_height:height_img, delta_width: width_img - delta_width - 1
             ]
         elif (width_img - 2 * delta_width) < width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width - 1 : width_img - delta_width
+                :, :, delta_height:height_img, delta_width - 1: width_img - delta_width
             ]
         else:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width
+                :, :, delta_height:height_img, delta_width: width_img - delta_width
             ]
 
         return cropped_image
@@ -405,15 +405,15 @@ class UNet_Prob(nn.Module):
 
         if (width_img - 2 * delta_width) > width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width - 1
+                :, :, delta_height:height_img, delta_width: width_img - delta_width - 1
             ]
         elif (width_img - 2 * delta_width) < width:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width - 1 : width_img - delta_width
+                :, :, delta_height:height_img, delta_width - 1: width_img - delta_width
             ]
         else:
             cropped_image = image[
-                :, :, delta_height:height_img, delta_width : width_img - delta_width
+                :, :, delta_height:height_img, delta_width: width_img - delta_width
             ]
 
         return cropped_image
@@ -423,7 +423,8 @@ if __name__ == "__main__":
     weight_pth = "/Users/jasonyuan/Desktop/UNet Weights/unet_model_batch64_scheduled_lr0.05_epochs40_e14_best.pt"
 
     model = UNet()
-    model.load_state_dict(torch.load(weight_pth, map_location=torch.device("cpu")))
+    model.load_state_dict(torch.load(
+        weight_pth, map_location=torch.device("cpu")))
     # model.to("cpu")
     model.eval()
     dummy_input = torch.ones(1, 5, 180, 330, device="cpu")
